@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
 import {
   Card, CardContent, CardHeader,
   CardTitle, CardDescription,
@@ -17,7 +19,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+
 import { auditLogsApi } from '@/lib/api/audit-logs.api';
 import { AuditAction, AuditEntity, AuditLogFilters } from '@/types';
 
@@ -72,23 +74,23 @@ export default function AuditLogsTable() {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      {/* Updated responsive CardHeader */}
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <CardTitle>Activity Log</CardTitle>
           <CardDescription>
             {meta ? `${meta.total} total events` : 'All system events'}
           </CardDescription>
         </div>
-
-        {/* Filters */}
-        <div className="flex gap-2">
+        {/* Updated flexible button wrapper */}
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <Select
             value={(filters.entity as string) ?? UNSET}
             onValueChange={(v) =>
               setFilter('entity', v === UNSET ? undefined : (v as AuditEntity))
             }
           >
-            <SelectTrigger className="h-8 w-32 text-sm">
+            <SelectTrigger className="h-8 w-full sm:w-32 text-sm flex-1 sm:flex-none">
               <SelectValue placeholder="Entity" />
             </SelectTrigger>
             <SelectContent>
@@ -105,7 +107,7 @@ export default function AuditLogsTable() {
               setFilter('action', v === UNSET ? undefined : (v as AuditAction))
             }
           >
-            <SelectTrigger className="h-8 w-40 text-sm">
+            <SelectTrigger className="h-8 w-full sm:w-40 text-sm flex-1 sm:flex-none">
               <SelectValue placeholder="Action" />
             </SelectTrigger>
             <SelectContent>
@@ -131,53 +133,56 @@ export default function AuditLogsTable() {
           </div>
         ) : (
           <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Entity</TableHead>
-                  <TableHead>Target</TableHead>
-                  <TableHead>Performed By</TableHead>
-                  <TableHead>When</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {logs.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell>
-                      <Badge variant={ACTION_VARIANTS[log.action]}>
-                        {ACTION_LABELS[log.action]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs">
-                        {ENTITY_LABELS[log.entity]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-700">
-                      {log.entityTitle ?? (
-                        <span className="text-gray-400 italic">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="text-sm font-medium">{log.performedByName}</p>
-                        <p className="text-xs text-gray-500">{log.performedByEmail}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-500 whitespace-nowrap">
-                      {new Date(log.createdAt).toLocaleString('en-UG', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </TableCell>
+            {/* Added missing overflow-x-auto wrapper */}
+            <div className="rounded-md border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Entity</TableHead>
+                    <TableHead>Target</TableHead>
+                    <TableHead>Performed By</TableHead>
+                    <TableHead>When</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {logs.map((log) => (
+                    <TableRow key={log.id}>
+                      <TableCell>
+                        <Badge variant={ACTION_VARIANTS[log.action]}>
+                          {ACTION_LABELS[log.action]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {ENTITY_LABELS[log.entity]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-700 min-w-[150px]">
+                        {log.entityTitle ?? (
+                          <span className="text-gray-400 italic">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="min-w-[150px]">
+                        <div>
+                          <p className="text-sm font-medium">{log.performedByName}</p>
+                          <p className="text-xs text-gray-500">{log.performedByEmail}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-500 whitespace-nowrap">
+                        {new Date(log.createdAt).toLocaleString('en-UG', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
 
             {/* Pagination */}
             {meta && meta.totalPages > 1 && (

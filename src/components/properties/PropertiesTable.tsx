@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,6 +21,7 @@ import {
   Table, TableBody, TableCell,
   TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+
 import PropertyFormSheet from './PropertyFormSheet';
 import ImageUploadManager from './ImageUploadManager';
 import PropertyFilterBar from './PropertyFilterBar';
@@ -87,7 +89,6 @@ export default function PropertiesTable() {
   const [imagesOpen, setImagesOpen] = useState(false);
   const [selected, setSelected] = useState<Property | null>(null);
 
-  // Server-side filters (excluding client-side search)
   const serverFilters: PropertyFilters = {
     districtId: filters.districtId,
     type: filters.type,
@@ -103,7 +104,6 @@ export default function PropertiesTable() {
     queryFn: () => propertiesApi.getAll(serverFilters),
   });
 
-  // Client-side text search on top of server filters
   const properties = useMemo(() => {
     const all = data?.data ?? [];
     if (!filters.search) return all;
@@ -154,7 +154,8 @@ export default function PropertiesTable() {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        {/* Updated responsive CardHeader */}
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <CardTitle>All Properties</CardTitle>
             <CardDescription>
@@ -164,17 +165,22 @@ export default function PropertiesTable() {
                 : ''}
             </CardDescription>
           </div>
-          <div className="flex gap-2">
+          {/* Updated flexible button wrapper */}
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               size="sm"
               onClick={() => exportToCsv(properties)}
               disabled={properties.length === 0}
+              className="flex-1 sm:flex-none"
             >
               <Download className="h-4 w-4 mr-2" />
               Export CSV
             </Button>
-            <Button onClick={() => { setSelected(null); setFormOpen(true); }}>
+            <Button 
+              onClick={() => { setSelected(null); setFormOpen(true); }}
+              className="flex-1 sm:flex-none"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Property
             </Button>
@@ -182,7 +188,6 @@ export default function PropertiesTable() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Filter bar */}
           <PropertyFilterBar
             filters={filters}
             onChange={setFilters}

@@ -4,7 +4,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Added min-w-0 to force tables to scroll internally on mobile */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {children}
       </div>
     </div>

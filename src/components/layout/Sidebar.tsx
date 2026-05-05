@@ -49,16 +49,14 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className="w-64 min-h-screen bg-gray-900 text-white flex flex-col">
-        {/* Logo Section */}
+      {/* Added hidden md:flex to hide this on mobile devices */}
+      <aside className="hidden md:flex w-64 min-h-screen bg-gray-900 text-white flex-col shrink-0">
         <div className="py-5 border-b border-gray-800">
-          {/* Forcing 'dark' class so the gray "UGANDA" text renders correctly on the dark sidebar */}
           <div className="dark transform scale-90 origin-left">
             <Logo />
           </div>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -84,7 +82,6 @@ export default function Sidebar() {
           })}
         </nav>
 
-        {/* Bottom */}
         <div className="px-3 py-4 border-t border-gray-800 space-y-1">
           <Link
             href="/settings"
@@ -108,7 +105,6 @@ export default function Sidebar() {
         </div>
       </aside>
 
-      {/* Logout Confirmation Dialog */}
       <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>

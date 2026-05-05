@@ -8,6 +8,7 @@ import {
   Plus, Pencil, Trash2, Phone,
   MessageCircle, Eye, Search, Download,
 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,7 @@ import {
   Table, TableBody, TableCell,
   TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+
 import LandlordFormSheet from './LandlordFormSheet';
 import DeleteDialog from '@/components/shared/DeleteDialog';
 import { landlordsApi } from '@/lib/api/landlords.api';
@@ -85,7 +87,8 @@ export default function LandlordsTable() {
   return (
     <>
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        {/* Updated responsive CardHeader */}
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <CardTitle>All Landlords</CardTitle>
             <CardDescription>
@@ -95,17 +98,22 @@ export default function LandlordsTable() {
                 : ''}
             </CardDescription>
           </div>
-          <div className="flex gap-2">
+          {/* Updated flexible button wrapper */}
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               size="sm"
               onClick={() => exportToCsv(filtered)}
               disabled={filtered.length === 0}
+              className="flex-1 sm:flex-none"
             >
               <Download className="h-4 w-4 mr-2" />
               Export CSV
             </Button>
-            <Button onClick={() => { setSelected(null); setSheetOpen(true); }}>
+            <Button 
+              onClick={() => { setSelected(null); setSheetOpen(true); }}
+              className="flex-1 sm:flex-none"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Landlord
             </Button>
@@ -113,12 +121,11 @@ export default function LandlordsTable() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Search */}
-          <div className="relative w-64">
+          <div className="relative w-full sm:w-64">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
             <Input
               placeholder="Search name, phone, email..."
-              className="pl-8 h-9 text-sm"
+              className="pl-8 h-9 text-sm w-full"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
