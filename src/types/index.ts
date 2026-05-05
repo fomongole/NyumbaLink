@@ -79,9 +79,7 @@ export type PropertyType =
   | 'STUDIO';
 
 export type PropertyStatus = 'AVAILABLE' | 'RENTED';
-
 export type FurnishingStatus = 'FURNISHED' | 'SEMI_FURNISHED' | 'UNFURNISHED';
-
 export type LeaseTerm = 'MONTHLY' | 'QUARTERLY' | 'BIANNUAL' | 'ANNUAL';
 
 export interface PropertyImage {
@@ -101,6 +99,8 @@ export interface Property {
   bathrooms: number;
   area: string;
   address?: string;
+  latitude?: number;
+  longitude?: number;
   status: PropertyStatus;
   furnishing?: FurnishingStatus;
   leaseTerm?: LeaseTerm;
@@ -128,6 +128,8 @@ export interface CreatePropertyPayload {
   bathrooms?: number;
   area: string;
   address?: string;
+  latitude?: number;
+  longitude?: number;
   furnishing?: FurnishingStatus;
   leaseTerm?: LeaseTerm;
   securityDeposit?: number;
@@ -148,6 +150,9 @@ export interface PropertyFilters {
   minPrice?: number;
   maxPrice?: number;
   bedrooms?: number;
+  lat?: number;
+  lng?: number;
+  radius?: number;
   page?: number;
   limit?: number;
 }

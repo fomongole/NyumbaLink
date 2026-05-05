@@ -10,13 +10,15 @@ import {
   ArrowLeft, Pencil, Trash2, ToggleLeft, ToggleRight,
   Images, Eye, MessageCircle, MapPin, Building2, User,
   Calendar, Car, Layers, BadgeCheck, BedDouble,
-  Bath, DollarSign, Star,
+  Bath, DollarSign, Star, Navigation,
 } from 'lucide-react';
 import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+
 import PropertyFormSheet from '@/components/properties/PropertyFormSheet';
 import ImageUploadManager from '@/components/properties/ImageUploadManager';
 import DeleteDialog from '@/components/shared/DeleteDialog';
@@ -52,6 +54,7 @@ export default function PropertyDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const queryClient = useQueryClient();
+
   const [editOpen, setEditOpen] = useState(false);
   const [imagesOpen, setImagesOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -124,10 +127,8 @@ export default function PropertyDetailPage({
         title={property.title}
         description={`${property.district.name} · ${property.area}`}
       />
-
       <main className="flex-1 p-6 space-y-6">
-        {/* Back + Actions */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <Link
             href="/properties"
             className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors"
@@ -136,7 +137,7 @@ export default function PropertyDetailPage({
             Back to Properties
           </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -176,13 +177,8 @@ export default function PropertyDetailPage({
           </div>
         </div>
 
-        {/* Main content grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-          {/* Left column — Images + Description */}
           <div className="lg:col-span-2 space-y-6">
-
-            {/* Image Gallery */}
             <Card className="overflow-hidden">
               <div className="aspect-video bg-gray-100 relative">
                 {displayImage ? (
@@ -198,19 +194,16 @@ export default function PropertyDetailPage({
                     <p className="text-sm">No images uploaded</p>
                   </div>
                 )}
-
-                {/* Status badge overlay */}
                 <div className="absolute top-3 left-3">
                   <Badge
                     variant={property.status === 'AVAILABLE' ? 'default' : 'secondary'}
-                    className="text-sm px-3 py-1"
+                    className="text-sm px-3 py-1 shadow-md"
                   >
                     {property.status === 'AVAILABLE' ? 'Available' : 'Rented Out'}
                   </Badge>
                 </div>
               </div>
-
-              {/* Thumbnail strip */}
+              
               {property.images.length > 1 && (
                 <div className="flex gap-2 p-3 overflow-x-auto bg-gray-50">
                   {property.images.map((img) => (
@@ -235,7 +228,6 @@ export default function PropertyDetailPage({
               )}
             </Card>
 
-            {/* Description */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Description</CardTitle>
@@ -247,7 +239,6 @@ export default function PropertyDetailPage({
               </CardContent>
             </Card>
 
-            {/* Amenities */}
             {property.amenities?.length > 0 && (
               <Card>
                 <CardHeader>
@@ -266,10 +257,7 @@ export default function PropertyDetailPage({
             )}
           </div>
 
-          {/* Right column — Details cards */}
           <div className="space-y-4">
-
-            {/* Price + Quick stats */}
             <Card>
               <CardContent className="pt-6 space-y-4">
                 <div>
@@ -278,7 +266,6 @@ export default function PropertyDetailPage({
                     UGX {Number(property.price).toLocaleString()}
                   </p>
                 </div>
-
                 {property.securityDeposit && (
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <DollarSign className="h-4 w-4 text-gray-400" />
@@ -287,7 +274,7 @@ export default function PropertyDetailPage({
                     </span>
                   </div>
                 )}
-
+                
                 <div className="grid grid-cols-2 gap-3 pt-2 border-t">
                   <div className="flex items-center gap-2">
                     <BedDouble className="h-4 w-4 text-gray-400" />
@@ -309,7 +296,6 @@ export default function PropertyDetailPage({
               </CardContent>
             </Card>
 
-            {/* Property Details */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Property Details</CardTitle>
@@ -318,9 +304,28 @@ export default function PropertyDetailPage({
                 <DetailRow icon={Building2} label="Type" value={TYPE_LABELS[property.type]} />
                 <DetailRow icon={MapPin} label="District" value={property.district.name} />
                 <DetailRow icon={MapPin} label="Area" value={property.area} />
+                
                 {property.address && (
                   <DetailRow icon={MapPin} label="Address" value={property.address} />
                 )}
+                
+                {property.latitude && property.longitude && (
+                  <div className="flex items-start gap-2.5">
+                    <Navigation className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1 flex justify-between gap-2">
+                      <span className="text-sm text-gray-500">GPS Location</span>
+                      <a 
+                        href={`https://www.google.com/maps/search/?api=1&query=${property.latitude},${property.longitude}`} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="text-sm font-medium text-primary hover:underline text-right"
+                      >
+                        {property.latitude.toFixed(4)}, {property.longitude.toFixed(4)}
+                      </a>
+                    </div>
+                  </div>
+                )}
+
                 {property.furnishing && (
                   <DetailRow
                     icon={BadgeCheck}
@@ -361,7 +366,6 @@ export default function PropertyDetailPage({
               </CardContent>
             </Card>
 
-            {/* Landlord Info */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Landlord</CardTitle>
@@ -376,7 +380,6 @@ export default function PropertyDetailPage({
                     <p className="text-xs text-gray-500">{property.landlord.phone}</p>
                   </div>
                 </div>
-
                 {property.landlord.email && (
                   <p className="text-sm text-gray-600">{property.landlord.email}</p>
                 )}
@@ -385,7 +388,6 @@ export default function PropertyDetailPage({
                     WhatsApp: {property.landlord.whatsapp}
                   </p>
                 )}
-
                 <Link href={`/landlords/${property.landlord.id}`}>
                   <Button variant="outline" size="sm" className="w-full mt-2">
                     View Landlord Profile
@@ -397,19 +399,16 @@ export default function PropertyDetailPage({
         </div>
       </main>
 
-      {/* Dialogs */}
       <PropertyFormSheet
         open={editOpen}
         onClose={() => setEditOpen(false)}
         property={property}
       />
-
       <ImageUploadManager
         open={imagesOpen}
         onClose={() => setImagesOpen(false)}
         property={property}
       />
-
       <DeleteDialog
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}

@@ -15,20 +15,32 @@ export const landlordSchema = z.object({
   notes: z.string().optional(),
 });
 
+// Helper to handle empty string inputs for optional numbers
+const optionalNumber = z.preprocess(
+  (v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)),
+  z.number().optional()
+);
+
 export const propertySchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
   description: z.string().min(20, 'Description must be at least 20 characters'),
   type: z.enum(['SINGLE_ROOM', 'DOUBLE_ROOM', 'APARTMENT', 'HOUSE', 'STUDIO']),
-  price: z.number().min(1, 'Price is required'),
-  bedrooms: z.number().min(1).optional(),
-  bathrooms: z.number().min(1).optional(),
+  // Require price, but cleanly cast strings to numbers
+  price: z.preprocess((v) => Number(v), z.number().min(1, 'Price is required')),
+  
+  // Use our helper for all optional numeric fields
+  bedrooms: z.preprocess((v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)), z.number().min(1).optional()),
+  bathrooms: z.preprocess((v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)), z.number().min(1).optional()),
+  securityDeposit: z.preprocess((v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)), z.number().min(0).optional()),
+  floor: z.preprocess((v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)), z.number().min(0).optional()),
+  latitude: optionalNumber,
+  longitude: optionalNumber,
+  
   area: z.string().min(2, 'Area is required'),
   address: z.string().optional(),
   furnishing: z.enum(['FURNISHED', 'SEMI_FURNISHED', 'UNFURNISHED']).optional(),
   leaseTerm: z.enum(['MONTHLY', 'QUARTERLY', 'BIANNUAL', 'ANNUAL']).optional(),
-  securityDeposit: z.number().min(0).optional(),
   availableFrom: z.string().optional(),
-  floor: z.number().min(0).optional(),
   parkingAvailable: z.boolean().optional(),
   landlordId: z.string().uuid('Select a landlord'),
   districtId: z.string().uuid('Select a district'),
