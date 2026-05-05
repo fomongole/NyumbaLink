@@ -5,17 +5,25 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+
 import {
-  Sheet, SheetContent, SheetHeader,
-  SheetTitle, SheetDescription,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Select, SelectContent, SelectItem,
-  SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
+
 import { createAdminSchema, CreateAdminFormData } from '@/lib/validators';
 import { usersApi } from '@/lib/api/users.api';
 
@@ -54,7 +62,7 @@ export default function UserFormSheet({ open, onClose }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-md overflow-y-auto">
+      <SheetContent className="!max-w-[500px] !w-[90vw] overflow-y-auto p-6 sm:p-8">
         <SheetHeader className="mb-6">
           <SheetTitle>Create Admin User</SheetTitle>
           <SheetDescription>
@@ -105,7 +113,7 @@ export default function UserFormSheet({ open, onClose }: Props) {
             </Select>
           </div>
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-6 mt-4">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
               Cancel
             </Button>

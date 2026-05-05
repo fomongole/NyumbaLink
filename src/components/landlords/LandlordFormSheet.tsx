@@ -6,14 +6,19 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+
 import {
-  Sheet, SheetContent, SheetHeader,
-  SheetTitle, SheetDescription,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+
 import { landlordSchema, LandlordFormData } from '@/lib/validators';
 import { landlordsApi } from '@/lib/api/landlords.api';
 import { Landlord } from '@/types';
@@ -80,7 +85,7 @@ export default function LandlordFormSheet({ open, onClose, landlord }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+      <SheetContent className="!max-w-[600px] !w-[90vw] overflow-y-auto p-6 sm:p-8">
         <SheetHeader className="mb-6">
           <SheetTitle>{isEditing ? 'Edit Landlord' : 'Add New Landlord'}</SheetTitle>
           <SheetDescription>
@@ -91,9 +96,7 @@ export default function LandlordFormSheet({ open, onClose, landlord }: Props) {
         </SheetHeader>
 
         <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
-
           <SectionLabel>Contact Information</SectionLabel>
-
           <div className="space-y-1.5">
             <Label htmlFor="name">Full Name <span className="text-destructive">*</span></Label>
             <Input id="name" placeholder="e.g. Joseph Kato" {...register('name')} />
@@ -106,7 +109,6 @@ export default function LandlordFormSheet({ open, onClose, landlord }: Props) {
               <Input id="phone" placeholder="+256701234567" {...register('phone')} />
               {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
             </div>
-
             <div className="space-y-1.5">
               <Label htmlFor="whatsapp">WhatsApp</Label>
               <Input id="whatsapp" placeholder="+256701234567" {...register('whatsapp')} />
@@ -125,7 +127,6 @@ export default function LandlordFormSheet({ open, onClose, landlord }: Props) {
           </div>
 
           <SectionLabel>Verification</SectionLabel>
-
           <div className="space-y-1.5">
             <Label htmlFor="nationalId">National ID (NIN)</Label>
             <Input
@@ -146,7 +147,6 @@ export default function LandlordFormSheet({ open, onClose, landlord }: Props) {
           </div>
 
           <SectionLabel>Notes</SectionLabel>
-
           <div className="space-y-1.5">
             <Label htmlFor="notes">Internal Notes</Label>
             <Textarea
@@ -157,7 +157,7 @@ export default function LandlordFormSheet({ open, onClose, landlord }: Props) {
             />
           </div>
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-6 mt-4">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
               Cancel
             </Button>

@@ -6,13 +6,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
-import { Loader2, Building2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { loginSchema, LoginFormData } from '@/lib/validators';
 import { authApi } from '@/lib/api/auth.api';
+import { Logo } from '@/components/shared/Logo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -48,57 +49,89 @@ export default function LoginPage() {
   };
 
   return (
-    <Card className="w-full max-w-md shadow-lg">
-      <CardHeader className="text-center pb-2">
-        <div className="flex justify-center mb-4">
-          <div className="bg-primary rounded-xl p-3">
-            <Building2 className="h-8 w-8 text-primary-foreground" />
+    <div className="flex w-full min-h-screen">
+      {/* Left Column - Branding (Hidden on Mobile) */}
+      <div className="relative hidden w-1/2 flex-col bg-zinc-950 text-white lg:flex">
+        {/* Subtle background overlay */}
+        <div className="absolute inset-0 bg-zinc-900/50" />
+        
+        <div className="relative z-20 flex h-full flex-col justify-between p-12">
+          {/* Logo Component */}
+          <Logo className="scale-125 origin-left" />
+
+          <div className="space-y-6">
+            <blockquote className="space-y-2">
+              <p className="text-xl font-medium leading-relaxed">
+                "Curating and managing Uganda's premier rental properties. Empowering landlords, connecting renters."
+              </p>
+              <footer className="text-sm text-zinc-400">Admin Portal v1.0</footer>
+            </blockquote>
           </div>
         </div>
-        <CardTitle className="text-2xl font-bold">NyumbaLink</CardTitle>
-        <CardDescription>Sign in to your admin dashboard</CardDescription>
-      </CardHeader>
+      </div>
 
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="email">Email address</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="admin@nyumbalink.com"
-              {...register('email')}
-            />
-            {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
-            )}
+      {/* Right Column - Login Form */}
+      <div className="flex w-full items-center justify-center lg:w-1/2 px-8 sm:px-12 md:px-24">
+        <div className="mx-auto w-full max-w-[400px] space-y-8">
+          
+          {/* Mobile Header (Only shows when left column is hidden) */}
+          <div className="flex items-center justify-center lg:hidden mb-8">
+            <Logo />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              {...register('password')}
-            />
-            {errors.password && (
-              <p className="text-sm text-destructive">{errors.password.message}</p>
-            )}
+          <div className="flex flex-col space-y-2 text-center lg:text-left">
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+              Welcome back
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Enter your credentials to access the dashboard
+            </p>
           </div>
 
-          <Button type="submit" className="w-full mt-2" disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing in...
-              </>
-            ) : (
-              'Sign in'
-            )}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="admin@nyumbalink.com"
+                className="h-11"
+                {...register('email')}
+              />
+              {errors.email && (
+                <p className="text-sm font-medium text-destructive">{errors.email.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+              </div>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                className="h-11"
+                {...register('password')}
+              />
+              {errors.password && (
+                <p className="text-sm font-medium text-destructive">{errors.password.message}</p>
+              )}
+            </div>
+
+            <Button type="submit" className="h-11 w-full text-base font-medium" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                'Sign in'
+              )}
+            </Button>
+          </form>
+        </div>
+      </div>
+    </div>
   );
 }

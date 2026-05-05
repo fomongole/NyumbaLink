@@ -6,18 +6,26 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+
 import {
-  Sheet, SheetContent, SheetHeader,
-  SheetTitle, SheetDescription,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Select, SelectContent, SelectItem,
-  SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
+
 import { propertySchema, PropertyFormData } from '@/lib/validators';
 import { propertiesApi } from '@/lib/api/properties.api';
 import { landlordsApi } from '@/lib/api/landlords.api';
@@ -132,7 +140,10 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+      {/* Using !max-w-[800px] and !w-[90vw] to force override Shadcn's internal width limits 
+        Added p-6 sm:p-8 back to fix the flush-to-edge issue
+      */}
+      <SheetContent className="!max-w-[800px] !w-[90vw] overflow-y-auto p-6 sm:p-8">
         <SheetHeader className="mb-6">
           <SheetTitle>{isEditing ? 'Edit Property' : 'Add New Property'}</SheetTitle>
           <SheetDescription>
@@ -143,10 +154,8 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
         </SheetHeader>
 
         <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
-
           {/* ── Basic Info ── */}
           <SectionLabel>Basic Information</SectionLabel>
-
           <div className="space-y-1.5">
             <Label>Title <span className="text-destructive">*</span></Label>
             <Input placeholder="e.g. Spacious 2BR Apartment in Kololo" {...register('title')} />
@@ -182,7 +191,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
               </Select>
               {errors.type && <p className="text-sm text-destructive">{errors.type.message}</p>}
             </div>
-
             <div className="space-y-1.5">
               <Label>Monthly Rent (UGX) <span className="text-destructive">*</span></Label>
               <Input
@@ -244,7 +252,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                 <p className="text-sm text-destructive">{errors.districtId.message}</p>
               )}
             </div>
-
             <div className="space-y-1.5">
               <Label>Landlord <span className="text-destructive">*</span></Label>
               <Select
@@ -266,7 +273,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
 
           {/* ── Rental Terms ── */}
           <SectionLabel>Rental Terms</SectionLabel>
-
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Furnishing</Label>
@@ -288,7 +294,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-1.5">
               <Label>Lease Term</Label>
               <Select
@@ -320,7 +325,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                 {...register('securityDeposit', { valueAsNumber: true })}
               />
             </div>
-
             <div className="space-y-1.5">
               <Label>Available From</Label>
               <Input type="date" {...register('availableFrom')} />
@@ -337,7 +341,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                 {...register('floor', { valueAsNumber: true })}
               />
             </div>
-
             <div className="space-y-1.5">
               <Label>Parking Available</Label>
               <div className="flex items-center gap-3 h-9 px-3 border rounded-md bg-white">
@@ -357,7 +360,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
 
           {/* ── Additional ── */}
           <SectionLabel>Additional</SectionLabel>
-
           <div className="space-y-1.5">
             <Label>Amenities</Label>
             <Input
@@ -373,7 +375,7 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             <p className="text-xs text-gray-500">Separate each amenity with a comma</p>
           </div>
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-3 pt-6 mt-4">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
               Cancel
             </Button>
