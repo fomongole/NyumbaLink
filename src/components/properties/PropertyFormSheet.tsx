@@ -46,7 +46,14 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
     queryFn: districtsApi.getAll,
   });
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<PropertyFormData>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<PropertyFormData>({
     resolver: zodResolver(propertySchema),
   });
 
@@ -67,8 +74,12 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
       });
     } else {
       reset({
-        title: '', description: '', area: '',
-        address: '', landlordId: '', districtId: '',
+        title: '',
+        description: '',
+        area: '',
+        address: '',
+        landlordId: '',
+        districtId: '',
         amenities: [],
       });
     }
@@ -93,7 +104,9 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
         <SheetHeader className="mb-6">
           <SheetTitle>{isEditing ? 'Edit Property' : 'Add New Property'}</SheetTitle>
           <SheetDescription>
-            {isEditing ? 'Update the property details below.' : 'Fill in all required details to list a new property.'}
+            {isEditing
+              ? 'Update the property details below.'
+              : 'Fill in all required details to list a new property.'}
           </SheetDescription>
         </SheetHeader>
 
@@ -108,15 +121,24 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
           {/* Description */}
           <div className="space-y-1.5">
             <Label>Description <span className="text-destructive">*</span></Label>
-            <Textarea placeholder="Describe the property in detail..." rows={4} {...register('description')} />
-            {errors.description && <p className="text-sm text-destructive">{errors.description.message}</p>}
+            <Textarea
+              placeholder="Describe the property in detail..."
+              rows={4}
+              {...register('description')}
+            />
+            {errors.description && (
+              <p className="text-sm text-destructive">{errors.description.message}</p>
+            )}
           </div>
 
           {/* Type + Price */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Property Type <span className="text-destructive">*</span></Label>
-              <Select value={watch('type')} onValueChange={(v) => setValue('type', v as PropertyFormData['type'])}>
+              <Select
+                value={watch('type')}
+                onValueChange={(v) => setValue('type', v as PropertyFormData['type'])}
+              >
                 <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
                 <SelectContent>
                   {PROPERTY_TYPES.map((t) => (
@@ -129,7 +151,11 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
 
             <div className="space-y-1.5">
               <Label>Monthly Rent (UGX) <span className="text-destructive">*</span></Label>
-              <Input type="number" placeholder="e.g. 800000" {...register('price')} />
+              <Input
+                type="number"
+                placeholder="e.g. 800000"
+                {...register('price', { valueAsNumber: true })}
+              />
               {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
             </div>
           </div>
@@ -138,11 +164,21 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Bedrooms</Label>
-              <Input type="number" min={1} placeholder="1" {...register('bedrooms')} />
+              <Input
+                type="number"
+                min={1}
+                placeholder="1"
+                {...register('bedrooms', { valueAsNumber: true })}
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Bathrooms</Label>
-              <Input type="number" min={1} placeholder="1" {...register('bathrooms')} />
+              <Input
+                type="number"
+                min={1}
+                placeholder="1"
+                {...register('bathrooms', { valueAsNumber: true })}
+              />
             </div>
           </div>
 
@@ -162,7 +198,10 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
           {/* District */}
           <div className="space-y-1.5">
             <Label>District <span className="text-destructive">*</span></Label>
-            <Select value={watch('districtId')} onValueChange={(v) => setValue('districtId', v)}>
+            <Select
+              value={watch('districtId')}
+              onValueChange={(v) => setValue('districtId', v)}
+            >
               <SelectTrigger><SelectValue placeholder="Select district" /></SelectTrigger>
               <SelectContent>
                 {districts.map((d) => (
@@ -170,13 +209,18 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                 ))}
               </SelectContent>
             </Select>
-            {errors.districtId && <p className="text-sm text-destructive">{errors.districtId.message}</p>}
+            {errors.districtId && (
+              <p className="text-sm text-destructive">{errors.districtId.message}</p>
+            )}
           </div>
 
           {/* Landlord */}
           <div className="space-y-1.5">
             <Label>Landlord <span className="text-destructive">*</span></Label>
-            <Select value={watch('landlordId')} onValueChange={(v) => setValue('landlordId', v)}>
+            <Select
+              value={watch('landlordId')}
+              onValueChange={(v) => setValue('landlordId', v)}
+            >
               <SelectTrigger><SelectValue placeholder="Select landlord" /></SelectTrigger>
               <SelectContent>
                 {landlords.map((l) => (
@@ -184,7 +228,9 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                 ))}
               </SelectContent>
             </Select>
-            {errors.landlordId && <p className="text-sm text-destructive">{errors.landlordId.message}</p>}
+            {errors.landlordId && (
+              <p className="text-sm text-destructive">{errors.landlordId.message}</p>
+            )}
           </div>
 
           {/* Amenities */}
@@ -193,7 +239,10 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             <Input
               placeholder="e.g. Water, Electricity, WiFi, Parking"
               onChange={(e) =>
-                setValue('amenities', e.target.value.split(',').map((a) => a.trim()).filter(Boolean))
+                setValue(
+                  'amenities',
+                  e.target.value.split(',').map((a) => a.trim()).filter(Boolean),
+                )
               }
               defaultValue={property?.amenities?.join(', ') ?? ''}
             />
