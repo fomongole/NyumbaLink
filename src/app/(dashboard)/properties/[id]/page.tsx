@@ -1,0 +1,443 @@
+'use client';
+
+import { use } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
+import { useState } from 'react';
+import {
+  ArrowLeft, Pencil, Trash2, ToggleLeft, ToggleRight,
+  Images, Eye, MessageCircle, MapPin, Building2, User,
+  Calendar, Car, Layers, BadgeCheck, BedDouble,
+  Bath, DollarSign, Star,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import PropertyFormSheet from '@/components/properties/PropertyFormSheet';
+import ImageUploadManager from '@/components/properties/ImageUploadManager';
+import DeleteDialog from '@/components/shared/DeleteDialog';
+import { propertiesApi } from '@/lib/api/properties.api';
+import Header from '@/components/layout/Header';
+
+const TYPE_LABELS: Record<string, string> = {
+  SINGLE_ROOM: 'Single Room',
+  DOUBLE_ROOM: 'Double Room',
+  APARTMENT: 'Apartment',
+  HOUSE: 'House',
+  STUDIO: 'Studio',
+};
+
+const FURNISHING_LABELS: Record<string, string> = {
+  FURNISHED: 'Furnished',
+  SEMI_FURNISHED: 'Semi-Furnished',
+  UNFURNISHED: 'Unfurnished',
+};
+
+const LEASE_LABELS: Record<string, string> = {
+  MONTHLY: 'Monthly',
+  QUARTERLY: 'Quarterly',
+  BIANNUAL: 'Biannual',
+  ANNUAL: 'Annual',
+};
+
+export default function PropertyDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [editOpen, setEditOpen] = useState(false);
+  const [imagesOpen, setImagesOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [activeImage, setActiveImage] = useState<string | null>(null);
+
+  const { data: property, isLoading } = useQuery({
+    queryKey: ['properties', id],
+    queryFn: () => propertiesApi.getOne(id),
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: () => propertiesApi.toggleStatus(id),
+    onSuccess: (updated) => {
+      queryClient.invalidateQueries({ queryKey: ['properties', id] });
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
+      toast.success(
+        `Marked as ${updated.status === 'AVAILABLE' ? 'Available' : 'Rented Out'}`,
+      );
+    },
+    onError: () => toast.error('Failed to update status.'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => propertiesApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
+      toast.success('Property deleted');
+      router.push('/properties');
+    },
+    onError: () => toast.error('Failed to delete property.'),
+  });
+
+  if (isLoading) {
+    return (
+      <>
+        <Header title="Property Details" />
+        <main className="flex-1 p-6 space-y-6">
+          <Skeleton className="h-8 w-48" />
+          <div className="grid grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-48" />
+            ))}
+          </div>
+        </main>
+      </>
+    );
+  }
+
+  if (!property) {
+    return (
+      <>
+        <Header title="Property Not Found" />
+        <main className="flex-1 p-6">
+          <p className="text-gray-500">This property does not exist or has been deleted.</p>
+          <Link href="/properties">
+            <Button className="mt-4">Back to Properties</Button>
+          </Link>
+        </main>
+      </>
+    );
+  }
+
+  const primaryImage =
+    property.images.find((i) => i.isPrimary) ?? property.images[0];
+  const displayImage = activeImage ?? primaryImage?.url;
+
+  return (
+    <>
+      <Header
+        title={property.title}
+        description={`${property.district.name} · ${property.area}`}
+      />
+
+      <main className="flex-1 p-6 space-y-6">
+        {/* Back + Actions */}
+        <div className="flex items-center justify-between">
+          <Link
+            href="/properties"
+            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Properties
+          </Link>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setImagesOpen(true)}
+            >
+              <Images className="h-4 w-4 mr-1.5" />
+              Images ({property.images.length}/8)
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => toggleMutation.mutate()}
+              disabled={toggleMutation.isPending}
+            >
+              {property.status === 'AVAILABLE' ? (
+                <><ToggleRight className="h-4 w-4 mr-1.5 text-green-600" />Mark Rented</>
+              ) : (
+                <><ToggleLeft className="h-4 w-4 mr-1.5" />Mark Available</>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditOpen(true)}
+            >
+              <Pencil className="h-4 w-4 mr-1.5" />
+              Edit
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-1.5" />
+              Delete
+            </Button>
+          </div>
+        </div>
+
+        {/* Main content grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* Left column — Images + Description */}
+          <div className="lg:col-span-2 space-y-6">
+
+            {/* Image Gallery */}
+            <Card className="overflow-hidden">
+              <div className="aspect-video bg-gray-100 relative">
+                {displayImage ? (
+                  <Image
+                    src={displayImage}
+                    alt={property.title}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                    <Building2 className="h-12 w-12 mb-2" />
+                    <p className="text-sm">No images uploaded</p>
+                  </div>
+                )}
+
+                {/* Status badge overlay */}
+                <div className="absolute top-3 left-3">
+                  <Badge
+                    variant={property.status === 'AVAILABLE' ? 'default' : 'secondary'}
+                    className="text-sm px-3 py-1"
+                  >
+                    {property.status === 'AVAILABLE' ? 'Available' : 'Rented Out'}
+                  </Badge>
+                </div>
+              </div>
+
+              {/* Thumbnail strip */}
+              {property.images.length > 1 && (
+                <div className="flex gap-2 p-3 overflow-x-auto bg-gray-50">
+                  {property.images.map((img) => (
+                    <button
+                      key={img.id}
+                      onClick={() => setActiveImage(img.url)}
+                      className={`relative h-16 w-24 flex-shrink-0 rounded-md overflow-hidden border-2 transition-colors ${
+                        (activeImage ?? primaryImage?.url) === img.url
+                          ? 'border-primary'
+                          : 'border-transparent'
+                      }`}
+                    >
+                      <Image src={img.url} alt="" fill className="object-cover" />
+                      {img.isPrimary && (
+                        <div className="absolute top-0.5 right-0.5">
+                          <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            {/* Description */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Description</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  {property.description}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Amenities */}
+            {property.amenities?.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Amenities</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {property.amenities.map((amenity) => (
+                      <Badge key={amenity} variant="secondary" className="text-sm">
+                        {amenity}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Right column — Details cards */}
+          <div className="space-y-4">
+
+            {/* Price + Quick stats */}
+            <Card>
+              <CardContent className="pt-6 space-y-4">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide">Monthly Rent</p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    UGX {Number(property.price).toLocaleString()}
+                  </p>
+                </div>
+
+                {property.securityDeposit && (
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <DollarSign className="h-4 w-4 text-gray-400" />
+                    <span>
+                      Security deposit: UGX {Number(property.securityDeposit).toLocaleString()}
+                    </span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                  <div className="flex items-center gap-2">
+                    <BedDouble className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm">{property.bedrooms} Bed{property.bedrooms !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Bath className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm">{property.bathrooms} Bath{property.bathrooms !== 1 ? 's' : ''}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Eye className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm">{property.viewCount} Views</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MessageCircle className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm">{property.enquiryCount} Enquiries</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Property Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Property Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <DetailRow icon={Building2} label="Type" value={TYPE_LABELS[property.type]} />
+                <DetailRow icon={MapPin} label="District" value={property.district.name} />
+                <DetailRow icon={MapPin} label="Area" value={property.area} />
+                {property.address && (
+                  <DetailRow icon={MapPin} label="Address" value={property.address} />
+                )}
+                {property.furnishing && (
+                  <DetailRow
+                    icon={BadgeCheck}
+                    label="Furnishing"
+                    value={FURNISHING_LABELS[property.furnishing]}
+                  />
+                )}
+                {property.leaseTerm && (
+                  <DetailRow
+                    icon={Calendar}
+                    label="Lease Term"
+                    value={LEASE_LABELS[property.leaseTerm]}
+                  />
+                )}
+                {property.availableFrom && (
+                  <DetailRow
+                    icon={Calendar}
+                    label="Available From"
+                    value={new Date(property.availableFrom).toLocaleDateString('en-UG', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  />
+                )}
+                {property.floor !== null && property.floor !== undefined && (
+                  <DetailRow
+                    icon={Layers}
+                    label="Floor"
+                    value={property.floor === 0 ? 'Ground Floor' : `Floor ${property.floor}`}
+                  />
+                )}
+                <DetailRow
+                  icon={Car}
+                  label="Parking"
+                  value={property.parkingAvailable ? 'Available' : 'Not available'}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Landlord Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Landlord</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                    <User className="h-5 w-5 text-gray-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">{property.landlord.name}</p>
+                    <p className="text-xs text-gray-500">{property.landlord.phone}</p>
+                  </div>
+                </div>
+
+                {property.landlord.email && (
+                  <p className="text-sm text-gray-600">{property.landlord.email}</p>
+                )}
+                {property.landlord.whatsapp && (
+                  <p className="text-sm text-gray-600">
+                    WhatsApp: {property.landlord.whatsapp}
+                  </p>
+                )}
+
+                <Link href={`/landlords/${property.landlord.id}`}>
+                  <Button variant="outline" size="sm" className="w-full mt-2">
+                    View Landlord Profile
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </main>
+
+      {/* Dialogs */}
+      <PropertyFormSheet
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        property={property}
+      />
+
+      <ImageUploadManager
+        open={imagesOpen}
+        onClose={() => setImagesOpen(false)}
+        property={property}
+      />
+
+      <DeleteDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={() => deleteMutation.mutate()}
+        isLoading={deleteMutation.isPending}
+        title="Delete Property"
+        description={`Are you sure you want to delete "${property.title}"? This is reversible — the property can be restored.`}
+      />
+    </>
+  );
+}
+
+function DetailRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-start gap-2.5">
+      <Icon className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
+      <div className="flex-1 flex justify-between gap-2">
+        <span className="text-sm text-gray-500">{label}</span>
+        <span className="text-sm font-medium text-gray-900 text-right">{value}</span>
+      </div>
+    </div>
+  );
+}

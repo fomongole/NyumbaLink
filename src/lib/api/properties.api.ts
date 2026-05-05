@@ -1,6 +1,7 @@
 import apiClient from './client';
 import {
   Property,
+  PropertyStats,
   CreatePropertyPayload,
   UpdatePropertyPayload,
   PropertyFilters,
@@ -20,6 +21,11 @@ export const propertiesApi = {
     return data;
   },
 
+  getStats: async (): Promise<PropertyStats> => {
+    const { data } = await apiClient.get<PropertyStats>('/properties/stats');
+    return data;
+  },
+
   create: async (payload: CreatePropertyPayload): Promise<Property> => {
     const { data } = await apiClient.post<Property>('/properties', payload);
     return data;
@@ -32,6 +38,11 @@ export const propertiesApi = {
 
   toggleStatus: async (id: string): Promise<Property> => {
     const { data } = await apiClient.patch<Property>(`/properties/${id}/toggle-status`);
+    return data;
+  },
+
+  restore: async (id: string): Promise<Property> => {
+    const { data } = await apiClient.patch<Property>(`/properties/${id}/restore`);
     return data;
   },
 

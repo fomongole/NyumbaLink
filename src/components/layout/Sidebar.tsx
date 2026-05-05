@@ -6,6 +6,9 @@ import {
   LayoutDashboard,
   Building2,
   Users,
+  ShieldCheck,
+  ScrollText,
+  Settings,
   LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -16,6 +19,8 @@ const navItems = [
   { label: 'Dashboard', href: '/', icon: LayoutDashboard },
   { label: 'Properties', href: '/properties', icon: Building2 },
   { label: 'Landlords', href: '/landlords', icon: Users },
+  { label: 'Users', href: '/users', icon: ShieldCheck },
+  { label: 'Audit Logs', href: '/audit-logs', icon: ScrollText },
 ];
 
 export default function Sidebar() {
@@ -71,8 +76,20 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Logout */}
-      <div className="px-3 py-4 border-t border-gray-700">
+      {/* Bottom */}
+      <div className="px-3 py-4 border-t border-gray-700 space-y-1">
+        <Link
+          href="/settings"
+          className={cn(
+            'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+            pathname === '/settings'
+              ? 'bg-primary text-primary-foreground'
+              : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+          )}
+        >
+          <Settings className="h-4 w-4" />
+          Settings
+        </Link>
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white transition-colors w-full"

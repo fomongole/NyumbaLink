@@ -8,7 +8,10 @@ export const loginSchema = z.object({
 export const landlordSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   phone: z.string().min(10, 'Enter a valid phone number'),
+  email: z.string().email('Enter a valid email').optional().or(z.literal('')),
   whatsapp: z.string().optional(),
+  nationalId: z.string().optional(),
+  physicalAddress: z.string().optional(),
   notes: z.string().optional(),
 });
 
@@ -21,11 +24,43 @@ export const propertySchema = z.object({
   bathrooms: z.number().min(1).optional(),
   area: z.string().min(2, 'Area is required'),
   address: z.string().optional(),
+  furnishing: z.enum(['FURNISHED', 'SEMI_FURNISHED', 'UNFURNISHED']).optional(),
+  leaseTerm: z.enum(['MONTHLY', 'QUARTERLY', 'BIANNUAL', 'ANNUAL']).optional(),
+  securityDeposit: z.number().min(0).optional(),
+  availableFrom: z.string().optional(),
+  floor: z.number().min(0).optional(),
+  parkingAvailable: z.boolean().optional(),
   landlordId: z.string().uuid('Select a landlord'),
   districtId: z.string().uuid('Select a district'),
   amenities: z.array(z.string()).optional(),
 });
 
+export const createAdminSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  email: z.string().email('Enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  role: z.enum(['ADMIN', 'RENTER']),
+});
+
+export const updateProfileSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').optional(),
+  email: z.string().email('Enter a valid email').optional(),
+});
+
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: z.string().min(6, 'New password must be at least 6 characters'),
+    confirmPassword: z.string().min(1, 'Please confirm your new password'),
+  })
+  .refine((d) => d.newPassword === d.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
+
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type LandlordFormData = z.infer<typeof landlordSchema>;
 export type PropertyFormData = z.infer<typeof propertySchema>;
+export type CreateAdminFormData = z.infer<typeof createAdminSchema>;
+export type UpdateProfileFormData = z.infer<typeof updateProfileSchema>;
+export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;

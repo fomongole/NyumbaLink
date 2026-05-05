@@ -6,12 +6,18 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import {
+  Sheet, SheetContent, SheetHeader,
+  SheetTitle, SheetDescription,
+} from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select, SelectContent, SelectItem,
+  SelectTrigger, SelectValue,
+} from '@/components/ui/select';
 import { propertySchema, PropertyFormData } from '@/lib/validators';
 import { propertiesApi } from '@/lib/api/properties.api';
 import { landlordsApi } from '@/lib/api/landlords.api';
@@ -25,6 +31,21 @@ const PROPERTY_TYPES = [
   { value: 'HOUSE', label: 'House' },
   { value: 'STUDIO', label: 'Studio' },
 ];
+
+const FURNISHING_OPTIONS = [
+  { value: 'FURNISHED', label: 'Furnished' },
+  { value: 'SEMI_FURNISHED', label: 'Semi-Furnished' },
+  { value: 'UNFURNISHED', label: 'Unfurnished' },
+];
+
+const LEASE_TERM_OPTIONS = [
+  { value: 'MONTHLY', label: 'Monthly' },
+  { value: 'QUARTERLY', label: 'Quarterly (3 months)' },
+  { value: 'BIANNUAL', label: 'Biannual (6 months)' },
+  { value: 'ANNUAL', label: 'Annual (1 year)' },
+];
+
+const UNSET = '__NONE__';
 
 interface Props {
   open: boolean;
@@ -68,18 +89,23 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
         bathrooms: property.bathrooms,
         area: property.area,
         address: property.address ?? '',
+        furnishing: property.furnishing,
+        leaseTerm: property.leaseTerm,
+        securityDeposit: property.securityDeposit,
+        availableFrom: property.availableFrom
+          ? property.availableFrom.split('T')[0]
+          : '',
+        floor: property.floor,
+        parkingAvailable: property.parkingAvailable ?? false,
         landlordId: property.landlord.id,
         districtId: property.district.id,
         amenities: property.amenities ?? [],
       });
     } else {
       reset({
-        title: '',
-        description: '',
-        area: '',
-        address: '',
-        landlordId: '',
-        districtId: '',
+        title: '', description: '', area: '', address: '',
+        landlordId: '', districtId: '',
+        parkingAvailable: false,
         amenities: [],
       });
     }
@@ -98,6 +124,12 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
     onError: () => toast.error('Something went wrong. Please try again.'),
   });
 
+  const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider pt-2 pb-1 border-t">
+      {children}
+    </p>
+  );
+
   return (
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
@@ -110,15 +142,17 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
           </SheetDescription>
         </SheetHeader>
 
-        <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-5">
-          {/* Title */}
+        <form onSubmit={handleSubmit((data) => mutation.mutate(data))} className="space-y-4">
+
+          {/* ── Basic Info ── */}
+          <SectionLabel>Basic Information</SectionLabel>
+
           <div className="space-y-1.5">
             <Label>Title <span className="text-destructive">*</span></Label>
             <Input placeholder="e.g. Spacious 2BR Apartment in Kololo" {...register('title')} />
             {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
           </div>
 
-          {/* Description */}
           <div className="space-y-1.5">
             <Label>Description <span className="text-destructive">*</span></Label>
             <Textarea
@@ -160,23 +194,19 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             </div>
           </div>
 
-          {/* Bedrooms + Bathrooms */}
+          {/* Beds + Baths */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Bedrooms</Label>
               <Input
-                type="number"
-                min={1}
-                placeholder="1"
+                type="number" min={1} placeholder="1"
                 {...register('bedrooms', { valueAsNumber: true })}
               />
             </div>
             <div className="space-y-1.5">
               <Label>Bathrooms</Label>
               <Input
-                type="number"
-                min={1}
-                placeholder="1"
+                type="number" min={1} placeholder="1"
                 {...register('bathrooms', { valueAsNumber: true })}
               />
             </div>
@@ -195,49 +225,143 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             </div>
           </div>
 
-          {/* District */}
-          <div className="space-y-1.5">
-            <Label>District <span className="text-destructive">*</span></Label>
-            <Select
-              value={watch('districtId')}
-              onValueChange={(v) => setValue('districtId', v)}
-            >
-              <SelectTrigger><SelectValue placeholder="Select district" /></SelectTrigger>
-              <SelectContent>
-                {districts.map((d) => (
-                  <SelectItem key={d.id} value={d.id}>{d.name} — {d.region}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.districtId && (
-              <p className="text-sm text-destructive">{errors.districtId.message}</p>
-            )}
+          {/* District + Landlord */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>District <span className="text-destructive">*</span></Label>
+              <Select
+                value={watch('districtId')}
+                onValueChange={(v) => setValue('districtId', v)}
+              >
+                <SelectTrigger><SelectValue placeholder="Select district" /></SelectTrigger>
+                <SelectContent>
+                  {districts.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.name} — {d.region}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.districtId && (
+                <p className="text-sm text-destructive">{errors.districtId.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Landlord <span className="text-destructive">*</span></Label>
+              <Select
+                value={watch('landlordId')}
+                onValueChange={(v) => setValue('landlordId', v)}
+              >
+                <SelectTrigger><SelectValue placeholder="Select landlord" /></SelectTrigger>
+                <SelectContent>
+                  {landlords.map((l) => (
+                    <SelectItem key={l.id} value={l.id}>{l.name} — {l.phone}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.landlordId && (
+                <p className="text-sm text-destructive">{errors.landlordId.message}</p>
+              )}
+            </div>
           </div>
 
-          {/* Landlord */}
-          <div className="space-y-1.5">
-            <Label>Landlord <span className="text-destructive">*</span></Label>
-            <Select
-              value={watch('landlordId')}
-              onValueChange={(v) => setValue('landlordId', v)}
-            >
-              <SelectTrigger><SelectValue placeholder="Select landlord" /></SelectTrigger>
-              <SelectContent>
-                {landlords.map((l) => (
-                  <SelectItem key={l.id} value={l.id}>{l.name} — {l.phone}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.landlordId && (
-              <p className="text-sm text-destructive">{errors.landlordId.message}</p>
-            )}
+          {/* ── Rental Terms ── */}
+          <SectionLabel>Rental Terms</SectionLabel>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Furnishing</Label>
+              <Select
+                value={watch('furnishing') ?? UNSET}
+                onValueChange={(v) =>
+                  setValue(
+                    'furnishing',
+                    v === UNSET ? undefined : (v as PropertyFormData['furnishing']),
+                  )
+                }
+              >
+                <SelectTrigger><SelectValue placeholder="Select furnishing" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={UNSET}>Not specified</SelectItem>
+                  {FURNISHING_OPTIONS.map((f) => (
+                    <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Lease Term</Label>
+              <Select
+                value={watch('leaseTerm') ?? UNSET}
+                onValueChange={(v) =>
+                  setValue(
+                    'leaseTerm',
+                    v === UNSET ? undefined : (v as PropertyFormData['leaseTerm']),
+                  )
+                }
+              >
+                <SelectTrigger><SelectValue placeholder="Select lease term" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={UNSET}>Not specified</SelectItem>
+                  {LEASE_TERM_OPTIONS.map((l) => (
+                    <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          {/* Amenities */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Security Deposit (UGX)</Label>
+              <Input
+                type="number"
+                placeholder="e.g. 500000"
+                {...register('securityDeposit', { valueAsNumber: true })}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Available From</Label>
+              <Input type="date" {...register('availableFrom')} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label>Floor / Level</Label>
+              <Input
+                type="number"
+                min={0}
+                placeholder="e.g. 3 (0 = ground)"
+                {...register('floor', { valueAsNumber: true })}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Parking Available</Label>
+              <div className="flex items-center gap-3 h-9 px-3 border rounded-md bg-white">
+                <input
+                  type="checkbox"
+                  id="parkingAvailable"
+                  className="h-4 w-4 accent-primary"
+                  checked={watch('parkingAvailable') ?? false}
+                  onChange={(e) => setValue('parkingAvailable', e.target.checked)}
+                />
+                <label htmlFor="parkingAvailable" className="text-sm text-gray-700 cursor-pointer">
+                  Yes, parking is available
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Additional ── */}
+          <SectionLabel>Additional</SectionLabel>
+
           <div className="space-y-1.5">
             <Label>Amenities</Label>
             <Input
-              placeholder="e.g. Water, Electricity, WiFi, Parking"
+              placeholder="e.g. Water, Electricity, WiFi, Security"
               onChange={(e) =>
                 setValue(
                   'amenities',
