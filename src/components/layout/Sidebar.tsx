@@ -11,6 +11,7 @@ import {
   ScrollText,
   Settings,
   LogOut,
+  CalendarCheck,
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
@@ -31,6 +32,7 @@ const navItems = [
   { label: 'Dashboard', href: '/', icon: LayoutDashboard },
   { label: 'Properties', href: '/properties', icon: Building2 },
   { label: 'Landlords', href: '/landlords', icon: Users },
+  { label: 'Bookings', href: '/bookings', icon: CalendarCheck },
   { label: 'Users', href: '/users', icon: ShieldCheck },
   { label: 'Audit Logs', href: '/audit-logs', icon: ScrollText },
 ];
@@ -49,7 +51,6 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Added hidden md:flex to hide this on mobile devices */}
       <aside className="hidden md:flex w-64 min-h-screen bg-gray-900 text-white flex-col shrink-0">
         <div className="py-5 border-b border-gray-800">
           <div className="dark transform scale-90 origin-left">
