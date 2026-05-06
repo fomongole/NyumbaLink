@@ -24,7 +24,7 @@ const optionalNumber = z.preprocess(
 export const propertySchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
   description: z.string().min(20, 'Description must be at least 20 characters'),
-  type: z.enum(['SINGLE_ROOM', 'DOUBLE_ROOM', 'APARTMENT', 'HOUSE', 'STUDIO']),
+  type: z.enum(['SINGLE_ROOM', 'DOUBLE_ROOM', 'APARTMENT', 'HOUSE', 'STUDIO', 'HOSTEL']),
   // Require price, but cleanly cast strings to numbers
   price: z.preprocess((v) => Number(v), z.number().min(1, 'Price is required')),
   

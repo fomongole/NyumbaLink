@@ -1,3 +1,5 @@
+// src/types/index.ts — Full updated version
+
 // ─── Auth ────────────────────────────────────────────────────────────────────
 export interface User {
   id: string;
@@ -43,6 +45,13 @@ export interface District {
   createdAt: string;
 }
 
+export interface CreateDistrictPayload {
+  name: string;
+  region?: string;
+}
+
+export type UpdateDistrictPayload = Partial<CreateDistrictPayload>;
+
 // ─── Landlord ────────────────────────────────────────────────────────────────
 export interface Landlord {
   id: string;
@@ -76,7 +85,8 @@ export type PropertyType =
   | 'DOUBLE_ROOM'
   | 'APARTMENT'
   | 'HOUSE'
-  | 'STUDIO';
+  | 'STUDIO'
+  | 'HOSTEL';
 
 export type PropertyStatus = 'AVAILABLE' | 'RENTED';
 export type FurnishingStatus = 'FURNISHED' | 'SEMI_FURNISHED' | 'UNFURNISHED';
@@ -167,6 +177,105 @@ export interface PropertyStats {
   topEnquired: Property[];
 }
 
+// ─── Hostel Rooms ─────────────────────────────────────────────────────────────
+export type HostelRoomType = 'SINGLE' | 'DOUBLE' | 'SHARED';
+export type HostelRoomStatus = 'AVAILABLE' | 'RESERVED' | 'OCCUPIED' | 'MAINTENANCE';
+
+export interface HostelRoom {
+  id: string;
+  roomNumber: string;
+  type: HostelRoomType;
+  price: number;
+  status: HostelRoomStatus;
+  floor?: number;
+  description?: string;
+  amenities?: string[];
+  property: Property;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateHostelRoomPayload {
+  roomNumber: string;
+  type: HostelRoomType;
+  price: number;
+  floor?: number;
+  description?: string;
+  amenities?: string[];
+}
+
+export type UpdateHostelRoomPayload = Partial<CreateHostelRoomPayload>;
+
+export interface UpdateRoomStatusPayload {
+  status: HostelRoomStatus;
+}
+
+export interface HostelRoomStats {
+  total: number;
+  available: number;
+  occupied: number;
+  reserved: number;
+  maintenance: number;
+  occupancyRate: number;
+}
+
+// ─── Bookings ─────────────────────────────────────────────────────────────────
+export type BookingStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+
+export interface Booking {
+  id: string;
+  status: BookingStatus;
+  renterName: string;
+  renterPhone: string;
+  renterEmail?: string;
+  moveInDate: string;
+  moveOutDate?: string;
+  notes?: string;
+  adminNotes?: string;
+  property: Property;
+  hostelRoom?: HostelRoom;
+  confirmedAt?: string;
+  cancelledAt?: string;
+  cancelledBy?: string;
+  cancellationReason?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateBookingPayload {
+  renterName: string;
+  renterPhone: string;
+  renterEmail?: string;
+  propertyId: string;
+  hostelRoomId?: string;
+  moveInDate: string;
+  moveOutDate?: string;
+  notes?: string;
+}
+
+export interface BookingFilters {
+  status?: BookingStatus;
+  propertyId?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface BookingStats {
+  total: number;
+  pending: number;
+  confirmed: number;
+  cancelled: number;
+  thisWeek: number;
+}
+
+export interface ConfirmBookingPayload {
+  adminNotes?: string;
+}
+
+export interface CancelBookingPayload {
+  reason?: string;
+}
+
 // ─── Audit Logs ───────────────────────────────────────────────────────────────
 export type AuditAction =
   | 'CREATE'
@@ -179,7 +288,15 @@ export type AuditAction =
   | 'LOGIN'
   | 'PASSWORD_CHANGE';
 
-export type AuditEntity = 'PROPERTY' | 'LANDLORD' | 'USER' | 'IMAGE' | 'AUTH';
+export type AuditEntity =
+  | 'PROPERTY'
+  | 'LANDLORD'
+  | 'USER'
+  | 'IMAGE'
+  | 'AUTH'
+  | 'HOSTEL_ROOM'
+  | 'BOOKING'
+  | 'DISTRICT';
 
 export interface AuditLog {
   id: string;
@@ -214,7 +331,7 @@ export interface PaginatedResponse<T> {
   };
 }
 
-// ─── API Error ───────────────────────────────────────────────────────────────
+// ─── API Error ────────────────────────────────────────────────────────────────
 export interface ApiError {
   message: string;
   error: string;

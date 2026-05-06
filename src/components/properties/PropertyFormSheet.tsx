@@ -1,11 +1,15 @@
 'use client';
 
+// src/components/properties/PropertyFormSheet.tsx
+// Key change: fields are conditionally rendered based on selected PropertyType
+// using the shared PROPERTY_FIELD_CONFIG map.
+
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Info } from 'lucide-react';
 
 import {
   Sheet,
@@ -30,6 +34,7 @@ import { propertySchema, PropertyFormData } from '@/lib/validators';
 import { propertiesApi } from '@/lib/api/properties.api';
 import { landlordsApi } from '@/lib/api/landlords.api';
 import { districtsApi } from '@/lib/api/districts.api';
+import { getFieldConfig } from '@/lib/property-field-rules';
 import { Property } from '@/types';
 
 const PROPERTY_TYPES = [
@@ -38,6 +43,7 @@ const PROPERTY_TYPES = [
   { value: 'APARTMENT', label: 'Apartment' },
   { value: 'HOUSE', label: 'House' },
   { value: 'STUDIO', label: 'Studio' },
+  { value: 'HOSTEL', label: 'Hostel (Campus / Managed)' },
 ];
 
 const FURNISHING_OPTIONS = [
@@ -83,9 +89,12 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
     watch,
     formState: { errors },
   } = useForm<PropertyFormData>({
-    // Added 'as any' to bypass the node_modules Resolver type mismatch
     resolver: zodResolver(propertySchema) as any,
   });
+
+  // Derive the field config reactively from the currently selected type
+  const selectedType = watch('type');
+  const fieldConfig = getFieldConfig(selectedType as any);
 
   useEffect(() => {
     if (property) {
@@ -153,15 +162,20 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
           </SheetDescription>
         </SheetHeader>
 
-        {/* Added 'as PropertyFormData' to bypass the data type inference failure */}
-        <form onSubmit={handleSubmit((data) => mutation.mutate(data as PropertyFormData))} className="space-y-4">
+        <form
+          onSubmit={handleSubmit((data) => mutation.mutate(data as PropertyFormData))}
+          className="space-y-4"
+        >
           <SectionLabel>Basic Information</SectionLabel>
+
+          {/* Title */}
           <div className="space-y-1.5">
             <Label>Title <span className="text-destructive">*</span></Label>
             <Input placeholder="e.g. Spacious 2BR Apartment in Kololo" {...register('title')} />
             {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
           </div>
 
+          {/* Description */}
           <div className="space-y-1.5">
             <Label>Description <span className="text-destructive">*</span></Label>
             <Textarea
@@ -174,6 +188,7 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             )}
           </div>
 
+          {/* Type + Price */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Property Type <span className="text-destructive">*</span></Label>
@@ -191,33 +206,50 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
               {errors.type && <p className="text-sm text-destructive">{errors.type.message}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label>Monthly Rent (UGX) <span className="text-destructive">*</span></Label>
-              <Input
-                type="number"
-                placeholder="e.g. 800000"
-                {...register('price')}
-              />
+              <Label>
+                {fieldConfig?.isHostel ? 'Starting Price (UGX)' : 'Monthly Rent (UGX)'}
+                <span className="text-destructive"> *</span>
+              </Label>
+              <Input type="number" placeholder="e.g. 800000" {...register('price')} />
+              {fieldConfig?.isHostel && (
+                <p className="text-[10px] text-gray-500">
+                  This is the hostel's base price. Individual rooms set their own price.
+                </p>
+              )}
               {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Bedrooms</Label>
-              <Input
-                type="number" min={1} placeholder="1"
-                {...register('bedrooms')}
-              />
+          {/* Hostel notice banner */}
+          {fieldConfig?.isHostel && (
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm">
+              <Info className="h-4 w-4 mt-0.5 shrink-0" />
+              <p>
+                After saving this hostel property, you can add individual rooms with their own
+                prices, types, and availability from the property detail page.
+              </p>
             </div>
-            <div className="space-y-1.5">
-              <Label>Bathrooms</Label>
-              <Input
-                type="number" min={1} placeholder="1"
-                {...register('bathrooms')}
-              />
-            </div>
-          </div>
+          )}
 
+          {/* Bedrooms + Bathrooms (conditional) */}
+          {(fieldConfig?.showBedrooms || fieldConfig?.showBathrooms) && (
+            <div className="grid grid-cols-2 gap-4">
+              {fieldConfig.showBedrooms && (
+                <div className="space-y-1.5">
+                  <Label>Bedrooms</Label>
+                  <Input type="number" min={1} placeholder="1" {...register('bedrooms')} />
+                </div>
+              )}
+              {fieldConfig.showBathrooms && (
+                <div className="space-y-1.5">
+                  <Label>Bathrooms</Label>
+                  <Input type="number" min={1} placeholder="1" {...register('bathrooms')} />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Area + Address */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Area / Neighbourhood <span className="text-destructive">*</span></Label>
@@ -230,30 +262,21 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             </div>
           </div>
 
-          {/* ── Geolocation (Manual Entry for High Accuracy) ── */}
+          {/* Geolocation */}
           <SectionLabel>Geolocation (GPS Coordinates)</SectionLabel>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Latitude</Label>
-              <Input 
-                type="number" 
-                step="any" 
-                placeholder="e.g. 0.347596" 
-                {...register('latitude')} 
-              />
+              <Input type="number" step="any" placeholder="e.g. 0.347596" {...register('latitude')} />
               <p className="text-[10px] text-gray-500">Copy/paste from Google Maps</p>
             </div>
             <div className="space-y-1.5">
               <Label>Longitude</Label>
-              <Input 
-                type="number" 
-                step="any" 
-                placeholder="e.g. 32.582520" 
-                {...register('longitude')} 
-              />
+              <Input type="number" step="any" placeholder="e.g. 32.582520" {...register('longitude')} />
             </div>
           </div>
 
+          {/* District + Landlord */}
           <SectionLabel>District & Landlord</SectionLabel>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -292,92 +315,109 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             </div>
           </div>
 
-          <SectionLabel>Rental Terms</SectionLabel>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Furnishing</Label>
-              <Select
-                value={watch('furnishing') ?? UNSET}
-                onValueChange={(v) =>
-                  setValue(
-                    'furnishing',
-                    v === UNSET ? undefined : (v as PropertyFormData['furnishing']),
-                  )
-                }
-              >
-                <SelectTrigger><SelectValue placeholder="Select furnishing" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={UNSET}>Not specified</SelectItem>
-                  {FURNISHING_OPTIONS.map((f) => (
-                    <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Lease Term</Label>
-              <Select
-                value={watch('leaseTerm') ?? UNSET}
-                onValueChange={(v) =>
-                  setValue(
-                    'leaseTerm',
-                    v === UNSET ? undefined : (v as PropertyFormData['leaseTerm']),
-                  )
-                }
-              >
-                <SelectTrigger><SelectValue placeholder="Select lease term" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={UNSET}>Not specified</SelectItem>
-                  {LEASE_TERM_OPTIONS.map((l) => (
-                    <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+          {/* Rental Terms (conditional) */}
+          {(fieldConfig?.showFurnishing ||
+            fieldConfig?.showLeaseTerm ||
+            fieldConfig?.showSecurityDeposit ||
+            fieldConfig?.showFloor ||
+            fieldConfig?.showParking) && (
+            <>
+              <SectionLabel>Rental Terms & Details</SectionLabel>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Security Deposit (UGX)</Label>
-              <Input
-                type="number"
-                placeholder="e.g. 500000"
-                {...register('securityDeposit')}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Available From</Label>
-              <Input type="date" {...register('availableFrom')} />
-            </div>
-          </div>
+              {(fieldConfig.showFurnishing || fieldConfig.showLeaseTerm) && (
+                <div className="grid grid-cols-2 gap-4">
+                  {fieldConfig.showFurnishing && (
+                    <div className="space-y-1.5">
+                      <Label>Furnishing</Label>
+                      <Select
+                        value={watch('furnishing') ?? UNSET}
+                        onValueChange={(v) =>
+                          setValue(
+                            'furnishing',
+                            v === UNSET ? undefined : (v as PropertyFormData['furnishing']),
+                          )
+                        }
+                      >
+                        <SelectTrigger><SelectValue placeholder="Select furnishing" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={UNSET}>Not specified</SelectItem>
+                          {FURNISHING_OPTIONS.map((f) => (
+                            <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {fieldConfig.showLeaseTerm && (
+                    <div className="space-y-1.5">
+                      <Label>Lease Term</Label>
+                      <Select
+                        value={watch('leaseTerm') ?? UNSET}
+                        onValueChange={(v) =>
+                          setValue(
+                            'leaseTerm',
+                            v === UNSET ? undefined : (v as PropertyFormData['leaseTerm']),
+                          )
+                        }
+                      >
+                        <SelectTrigger><SelectValue placeholder="Select lease term" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={UNSET}>Not specified</SelectItem>
+                          {LEASE_TERM_OPTIONS.map((l) => (
+                            <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>Floor / Level</Label>
-              <Input
-                type="number"
-                min={0}
-                placeholder="e.g. 3 (0 = ground)"
-                {...register('floor')}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Parking Available</Label>
-              <div className="flex items-center gap-3 h-9 px-3 border rounded-md bg-white">
-                <input
-                  type="checkbox"
-                  id="parkingAvailable"
-                  className="h-4 w-4 accent-primary"
-                  checked={watch('parkingAvailable') ?? false}
-                  onChange={(e) => setValue('parkingAvailable', e.target.checked)}
-                />
-                <label htmlFor="parkingAvailable" className="text-sm text-gray-700 cursor-pointer">
-                  Yes, parking is available
-                </label>
+              {(fieldConfig.showSecurityDeposit || fieldConfig.showFloor) && (
+                <div className="grid grid-cols-2 gap-4">
+                  {fieldConfig.showSecurityDeposit && (
+                    <div className="space-y-1.5">
+                      <Label>Security Deposit (UGX)</Label>
+                      <Input type="number" placeholder="e.g. 500000" {...register('securityDeposit')} />
+                    </div>
+                  )}
+                  {fieldConfig.showFloor && (
+                    <div className="space-y-1.5">
+                      <Label>Floor / Level</Label>
+                      <Input type="number" min={0} placeholder="e.g. 3 (0 = ground)" {...register('floor')} />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Available From</Label>
+                  <Input type="date" {...register('availableFrom')} />
+                </div>
+
+                {fieldConfig.showParking && (
+                  <div className="space-y-1.5">
+                    <Label>Parking Available</Label>
+                    <div className="flex items-center gap-3 h-9 px-3 border rounded-md bg-white">
+                      <input
+                        type="checkbox"
+                        id="parkingAvailable"
+                        className="h-4 w-4 accent-primary"
+                        checked={watch('parkingAvailable') ?? false}
+                        onChange={(e) => setValue('parkingAvailable', e.target.checked)}
+                      />
+                      <label htmlFor="parkingAvailable" className="text-sm text-gray-700 cursor-pointer">
+                        Yes, parking is available
+                      </label>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          </div>
+            </>
+          )}
 
+          {/* Amenities */}
           <SectionLabel>Additional</SectionLabel>
           <div className="space-y-1.5">
             <Label>Amenities</Label>
