@@ -35,6 +35,7 @@ const TYPE_LABELS: Record<string, string> = {
   APARTMENT: 'Apartment',
   HOUSE: 'House',
   STUDIO: 'Studio',
+  HOSTEL: 'Hostel',
 };
 
 const FURNISHING_LABELS: Record<string, string> = {

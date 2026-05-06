@@ -1,9 +1,5 @@
 'use client';
 
-// src/components/properties/PropertyFormSheet.tsx
-// Key change: fields are conditionally rendered based on selected PropertyType
-// using the shared PROPERTY_FIELD_CONFIG map.
-
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -87,12 +83,21 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
     reset,
     setValue,
     watch,
-    formState: { errors },
+    formState: { errors, isSubmitted },
   } = useForm<PropertyFormData>({
     resolver: zodResolver(propertySchema) as any,
+    defaultValues: {
+      title: '',
+      description: '',
+      area: '',
+      address: '',
+      landlordId: '',
+      districtId: '',
+      parkingAvailable: false,
+      amenities: [],
+    },
   });
 
-  // Derive the field config reactively from the currently selected type
   const selectedType = watch('type');
   const fieldConfig = getFieldConfig(selectedType as any);
 
@@ -123,8 +128,12 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
       });
     } else {
       reset({
-        title: '', description: '', area: '', address: '',
-        landlordId: '', districtId: '',
+        title: '',
+        description: '',
+        area: '',
+        address: '',
+        landlordId: '',
+        districtId: '',
         parkingAvailable: false,
         amenities: [],
       });
@@ -141,14 +150,36 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
       toast.success(isEditing ? 'Property updated!' : 'Property created!');
       onClose();
     },
-    onError: () => toast.error('Something went wrong. Please try again.'),
+    onError: (err: any) => {
+      const msg =
+        err?.response?.data?.message ??
+        'Something went wrong. Please try again.';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
+    },
   });
+
+  // Called when Zod validation fails on submit — tell the user clearly
+  const onValidationError = () => {
+    toast.error('Please fill in all required fields before submitting.');
+  };
+
+  // Helper: setValue that also triggers validation so errors appear immediately
+  const setValidatedValue = (
+    field: keyof PropertyFormData,
+    value: unknown,
+  ) => {
+    setValue(field, value as any, { shouldValidate: isSubmitted, shouldDirty: true });
+  };
 
   const SectionLabel = ({ children }: { children: React.ReactNode }) => (
     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider pt-2 pb-1 border-t">
       {children}
     </p>
   );
+
+  // Reusable error message component
+  const FieldError = ({ message }: { message?: string }) =>
+    message ? <p className="text-sm text-destructive mt-1">{message}</p> : null;
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
@@ -163,60 +194,88 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
         </SheetHeader>
 
         <form
-          onSubmit={handleSubmit((data) => mutation.mutate(data as PropertyFormData))}
+          onSubmit={handleSubmit(
+            (data) => mutation.mutate(data as PropertyFormData),
+            onValidationError,
+          )}
           className="space-y-4"
         >
           <SectionLabel>Basic Information</SectionLabel>
 
           {/* Title */}
           <div className="space-y-1.5">
-            <Label>Title <span className="text-destructive">*</span></Label>
-            <Input placeholder="e.g. Spacious 2BR Apartment in Kololo" {...register('title')} />
-            {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
+            <Label>
+              Title <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              placeholder="e.g. Spacious 2BR Apartment in Kololo"
+              {...register('title')}
+              className={errors.title ? 'border-destructive' : ''}
+            />
+            <FieldError message={errors.title?.message} />
           </div>
 
           {/* Description */}
           <div className="space-y-1.5">
-            <Label>Description <span className="text-destructive">*</span></Label>
+            <Label>
+              Description <span className="text-destructive">*</span>
+            </Label>
             <Textarea
-              placeholder="Describe the property in detail..."
+              placeholder="Describe the property in detail... (min. 20 characters)"
               rows={4}
               {...register('description')}
+              className={errors.description ? 'border-destructive' : ''}
             />
-            {errors.description && (
-              <p className="text-sm text-destructive">{errors.description.message}</p>
-            )}
+            <FieldError message={errors.description?.message} />
           </div>
 
           {/* Type + Price */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Property Type <span className="text-destructive">*</span></Label>
+              <Label>
+                Property Type <span className="text-destructive">*</span>
+              </Label>
               <Select
-                value={watch('type')}
-                onValueChange={(v) => setValue('type', v as PropertyFormData['type'])}
+                value={watch('type') ?? ''}
+                onValueChange={(v) =>
+                  setValidatedValue('type', v as PropertyFormData['type'])
+                }
               >
-                <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                <SelectTrigger
+                  className={errors.type ? 'border-destructive' : ''}
+                >
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
                 <SelectContent>
                   {PROPERTY_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {errors.type && <p className="text-sm text-destructive">{errors.type.message}</p>}
+              <FieldError message={errors.type?.message} />
             </div>
+
             <div className="space-y-1.5">
               <Label>
-                {fieldConfig?.isHostel ? 'Starting Price (UGX)' : 'Monthly Rent (UGX)'}
+                {fieldConfig?.isHostel
+                  ? 'Starting Price (UGX)'
+                  : 'Monthly Rent (UGX)'}
                 <span className="text-destructive"> *</span>
               </Label>
-              <Input type="number" placeholder="e.g. 800000" {...register('price')} />
+              <Input
+                type="number"
+                placeholder="e.g. 800000"
+                {...register('price')}
+                className={errors.price ? 'border-destructive' : ''}
+              />
               {fieldConfig?.isHostel && (
                 <p className="text-[10px] text-gray-500">
                   This is the hostel's base price. Individual rooms set their own price.
                 </p>
               )}
-              {errors.price && <p className="text-sm text-destructive">{errors.price.message}</p>}
+              <FieldError message={errors.price?.message} />
             </div>
           </div>
 
@@ -225,8 +284,9 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm">
               <Info className="h-4 w-4 mt-0.5 shrink-0" />
               <p>
-                After saving this hostel property, you can add individual rooms with their own
-                prices, types, and availability from the property detail page.
+                After saving this hostel property, you can add individual rooms
+                with their own prices, types, and availability from the property
+                detail page.
               </p>
             </div>
           )}
@@ -252,13 +312,22 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
           {/* Area + Address */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Area / Neighbourhood <span className="text-destructive">*</span></Label>
-              <Input placeholder="e.g. Kololo" {...register('area')} />
-              {errors.area && <p className="text-sm text-destructive">{errors.area.message}</p>}
+              <Label>
+                Area / Neighbourhood <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                placeholder="e.g. Kololo"
+                {...register('area')}
+                className={errors.area ? 'border-destructive' : ''}
+              />
+              <FieldError message={errors.area?.message} />
             </div>
             <div className="space-y-1.5">
               <Label>Street Address</Label>
-              <Input placeholder="e.g. Plot 23, Acacia Ave" {...register('address')} />
+              <Input
+                placeholder="e.g. Plot 23, Acacia Ave"
+                {...register('address')}
+              />
             </div>
           </div>
 
@@ -267,12 +336,22 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Latitude</Label>
-              <Input type="number" step="any" placeholder="e.g. 0.347596" {...register('latitude')} />
+              <Input
+                type="number"
+                step="any"
+                placeholder="e.g. 0.347596"
+                {...register('latitude')}
+              />
               <p className="text-[10px] text-gray-500">Copy/paste from Google Maps</p>
             </div>
             <div className="space-y-1.5">
               <Label>Longitude</Label>
-              <Input type="number" step="any" placeholder="e.g. 32.582520" {...register('longitude')} />
+              <Input
+                type="number"
+                step="any"
+                placeholder="e.g. 32.582520"
+                {...register('longitude')}
+              />
             </div>
           </div>
 
@@ -280,38 +359,51 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
           <SectionLabel>District & Landlord</SectionLabel>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>District <span className="text-destructive">*</span></Label>
+              <Label>
+                District <span className="text-destructive">*</span>
+              </Label>
               <Select
-                value={watch('districtId')}
-                onValueChange={(v) => setValue('districtId', v)}
+                value={watch('districtId') ?? ''}
+                onValueChange={(v) => setValidatedValue('districtId', v)}
               >
-                <SelectTrigger><SelectValue placeholder="Select district" /></SelectTrigger>
+                <SelectTrigger
+                  className={errors.districtId ? 'border-destructive' : ''}
+                >
+                  <SelectValue placeholder="Select district" />
+                </SelectTrigger>
                 <SelectContent>
                   {districts.map((d) => (
-                    <SelectItem key={d.id} value={d.id}>{d.name} — {d.region}</SelectItem>
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.name} — {d.region}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {errors.districtId && (
-                <p className="text-sm text-destructive">{errors.districtId.message}</p>
-              )}
+              <FieldError message={errors.districtId?.message} />
             </div>
+
             <div className="space-y-1.5">
-              <Label>Landlord <span className="text-destructive">*</span></Label>
+              <Label>
+                Landlord <span className="text-destructive">*</span>
+              </Label>
               <Select
-                value={watch('landlordId')}
-                onValueChange={(v) => setValue('landlordId', v)}
+                value={watch('landlordId') ?? ''}
+                onValueChange={(v) => setValidatedValue('landlordId', v)}
               >
-                <SelectTrigger><SelectValue placeholder="Select landlord" /></SelectTrigger>
+                <SelectTrigger
+                  className={errors.landlordId ? 'border-destructive' : ''}
+                >
+                  <SelectValue placeholder="Select landlord" />
+                </SelectTrigger>
                 <SelectContent>
                   {landlords.map((l) => (
-                    <SelectItem key={l.id} value={l.id}>{l.name} — {l.phone}</SelectItem>
+                    <SelectItem key={l.id} value={l.id}>
+                      {l.name} — {l.phone}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {errors.landlordId && (
-                <p className="text-sm text-destructive">{errors.landlordId.message}</p>
-              )}
+              <FieldError message={errors.landlordId?.message} />
             </div>
           </div>
 
@@ -332,17 +424,23 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                       <Select
                         value={watch('furnishing') ?? UNSET}
                         onValueChange={(v) =>
-                          setValue(
+                          setValidatedValue(
                             'furnishing',
-                            v === UNSET ? undefined : (v as PropertyFormData['furnishing']),
+                            v === UNSET
+                              ? undefined
+                              : (v as PropertyFormData['furnishing']),
                           )
                         }
                       >
-                        <SelectTrigger><SelectValue placeholder="Select furnishing" /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select furnishing" />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value={UNSET}>Not specified</SelectItem>
                           {FURNISHING_OPTIONS.map((f) => (
-                            <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                            <SelectItem key={f.value} value={f.value}>
+                              {f.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -354,17 +452,23 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                       <Select
                         value={watch('leaseTerm') ?? UNSET}
                         onValueChange={(v) =>
-                          setValue(
+                          setValidatedValue(
                             'leaseTerm',
-                            v === UNSET ? undefined : (v as PropertyFormData['leaseTerm']),
+                            v === UNSET
+                              ? undefined
+                              : (v as PropertyFormData['leaseTerm']),
                           )
                         }
                       >
-                        <SelectTrigger><SelectValue placeholder="Select lease term" /></SelectTrigger>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select lease term" />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value={UNSET}>Not specified</SelectItem>
                           {LEASE_TERM_OPTIONS.map((l) => (
-                            <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                            <SelectItem key={l.value} value={l.value}>
+                              {l.label}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -378,13 +482,22 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                   {fieldConfig.showSecurityDeposit && (
                     <div className="space-y-1.5">
                       <Label>Security Deposit (UGX)</Label>
-                      <Input type="number" placeholder="e.g. 500000" {...register('securityDeposit')} />
+                      <Input
+                        type="number"
+                        placeholder="e.g. 500000"
+                        {...register('securityDeposit')}
+                      />
                     </div>
                   )}
                   {fieldConfig.showFloor && (
                     <div className="space-y-1.5">
                       <Label>Floor / Level</Label>
-                      <Input type="number" min={0} placeholder="e.g. 3 (0 = ground)" {...register('floor')} />
+                      <Input
+                        type="number"
+                        min={0}
+                        placeholder="e.g. 3 (0 = ground)"
+                        {...register('floor')}
+                      />
                     </div>
                   )}
                 </div>
@@ -405,9 +518,14 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                         id="parkingAvailable"
                         className="h-4 w-4 accent-primary"
                         checked={watch('parkingAvailable') ?? false}
-                        onChange={(e) => setValue('parkingAvailable', e.target.checked)}
+                        onChange={(e) =>
+                          setValue('parkingAvailable', e.target.checked)
+                        }
                       />
-                      <label htmlFor="parkingAvailable" className="text-sm text-gray-700 cursor-pointer">
+                      <label
+                        htmlFor="parkingAvailable"
+                        className="text-sm text-gray-700 cursor-pointer"
+                      >
                         Yes, parking is available
                       </label>
                     </div>
@@ -426,22 +544,67 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
               onChange={(e) =>
                 setValue(
                   'amenities',
-                  e.target.value.split(',').map((a) => a.trim()).filter(Boolean),
+                  e.target.value
+                    .split(',')
+                    .map((a) => a.trim())
+                    .filter(Boolean),
                 )
               }
               defaultValue={property?.amenities?.join(', ') ?? ''}
             />
-            <p className="text-xs text-gray-500">Separate each amenity with a comma</p>
+            <p className="text-xs text-gray-500">
+              Separate each amenity with a comma
+            </p>
           </div>
 
+          {/* Summary of errors shown at bottom if any exist after first submit attempt */}
+          {isSubmitted && Object.keys(errors).length > 0 && (
+            <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+              <p className="font-medium mb-1">
+                Please fix the following before submitting:
+              </p>
+              <ul className="list-disc list-inside space-y-0.5">
+                {errors.title && <li>Title — {errors.title.message}</li>}
+                {errors.description && (
+                  <li>Description — {errors.description.message}</li>
+                )}
+                {errors.type && <li>Property Type — {errors.type.message}</li>}
+                {errors.price && <li>Price — {errors.price.message}</li>}
+                {errors.area && <li>Area — {errors.area.message}</li>}
+                {errors.districtId && (
+                  <li>District — {errors.districtId.message}</li>
+                )}
+                {errors.landlordId && (
+                  <li>Landlord — {errors.landlordId.message}</li>
+                )}
+              </ul>
+            </div>
+          )}
+
           <div className="flex gap-3 pt-6 mt-4">
-            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
+              onClick={onClose}
+            >
               Cancel
             </Button>
-            <Button type="submit" className="flex-1" disabled={mutation.isPending}>
+            <Button
+              type="submit"
+              className="flex-1"
+              disabled={mutation.isPending}
+            >
               {mutation.isPending ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
-              ) : isEditing ? 'Update Property' : 'Create Property'}
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : isEditing ? (
+                'Update Property'
+              ) : (
+                'Create Property'
+              )}
             </Button>
           </div>
         </form>

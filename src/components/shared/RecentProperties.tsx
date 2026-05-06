@@ -15,6 +15,7 @@ const TYPE_LABELS: Record<string, string> = {
   APARTMENT: 'Apartment',
   HOUSE: 'House',
   STUDIO: 'Studio',
+  HOSTEL: 'Hostel',
 };
 
 export default function RecentProperties() {

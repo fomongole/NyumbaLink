@@ -24,9 +24,16 @@ const optionalNumber = z.preprocess(
 export const propertySchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
   description: z.string().min(20, 'Description must be at least 20 characters'),
-  type: z.enum(['SINGLE_ROOM', 'DOUBLE_ROOM', 'APARTMENT', 'HOUSE', 'STUDIO', 'HOSTEL']),
+  // Human-friendly error — Zod v4 syntax
+  type: z.enum(
+    ['SINGLE_ROOM', 'DOUBLE_ROOM', 'APARTMENT', 'HOUSE', 'STUDIO', 'HOSTEL'] as const,
+    { message: 'Please select a property type' },
+  ),
   // Require price, but cleanly cast strings to numbers
-  price: z.preprocess((v) => Number(v), z.number().min(1, 'Price is required')),
+  price: z.preprocess(
+  (v) => (v === '' || v === undefined || v === null || Number.isNaN(Number(v)) ? undefined : Number(v)),
+  z.number({ message: 'Price is required' }).min(1, 'Price must be greater than 0'),
+),
   
   // Use our helper for all optional numeric fields
   bedrooms: z.preprocess((v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)), z.number().min(1).optional()),

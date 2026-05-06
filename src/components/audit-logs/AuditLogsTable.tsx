@@ -53,6 +53,9 @@ const ENTITY_LABELS: Record<AuditEntity, string> = {
   USER: 'User',
   IMAGE: 'Image',
   AUTH: 'Auth',
+  HOSTEL_ROOM: 'Hostel Room',
+  BOOKING: 'Booking',
+  DISTRICT: 'District',
 };
 
 const UNSET = '__ALL__';
