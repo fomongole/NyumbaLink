@@ -86,7 +86,12 @@ export const changePasswordSchema = z
   });
 
 export type LoginFormData = z.infer<typeof loginSchema>;
-export type LandlordFormData = z.infer<typeof landlordSchema>;
+
+// LandlordFormInput  = shape of the raw form fields (empty strings allowed)
+// LandlordFormData   = shape after Zod transforms (empty strings → undefined)
+export type LandlordFormInput = z.input<typeof landlordSchema>;
+export type LandlordFormData = z.output<typeof landlordSchema>;
+
 export type PropertyFormData = z.infer<typeof propertySchema>;
 export type CreateAdminFormData = z.infer<typeof createAdminSchema>;
 export type UpdateProfileFormData = z.infer<typeof updateProfileSchema>;

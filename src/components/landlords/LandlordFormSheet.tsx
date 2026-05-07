@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 
-import { landlordSchema, LandlordFormData } from '@/lib/validators';
+import { landlordSchema, LandlordFormData, LandlordFormInput } from '@/lib/validators';
 import { landlordsApi } from '@/lib/api/landlords.api';
 import { Landlord } from '@/types';
 
@@ -38,7 +38,7 @@ export default function LandlordFormSheet({ open, onClose, landlord }: Props) {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<LandlordFormData>({
+  } = useForm<LandlordFormInput, unknown, LandlordFormData>({
     resolver: zodResolver(landlordSchema),
   });
 
