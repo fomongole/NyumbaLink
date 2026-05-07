@@ -15,11 +15,17 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    const isLoginRequest = error.config?.url?.includes('/auth/login');
+    const url = error.config?.url ?? '';
 
-    // Only redirect on 401 if it's NOT the login request itself.
-    // If we redirected on login 401s, the page would reload and swallow the error toast.
-    if (error.response?.status === 401 && !isLoginRequest) {
+    // Endpoints that legitimately return 401 without meaning "session expired"
+    const isLoginRequest = url.includes('/auth/login');
+    const isPasswordChangeRequest = url.includes('/users/me/password');
+
+    if (
+      error.response?.status === 401 &&
+      !isLoginRequest &&
+      !isPasswordChangeRequest
+    ) {
       Cookies.remove('token');
       Cookies.remove('user');
       window.location.href = '/login';

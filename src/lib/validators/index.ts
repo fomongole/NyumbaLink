@@ -5,14 +5,26 @@ export const loginSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
+// Converts empty strings to undefined so optional unique fields
+// (nationalId, email) are not sent as '' and do not hit the unique constraint
+const optionalString = z
+  .string()
+  .optional()
+  .transform((v) => (v === '' ? undefined : v));
+
 export const landlordSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   phone: z.string().min(10, 'Enter a valid phone number'),
-  email: z.string().email('Enter a valid email').optional().or(z.literal('')),
-  whatsapp: z.string().optional(),
-  nationalId: z.string().optional(),
-  physicalAddress: z.string().optional(),
-  notes: z.string().optional(),
+  email: z
+    .string()
+    .email('Enter a valid email')
+    .optional()
+    .or(z.literal(''))
+    .transform((v) => (v === '' ? undefined : v)),
+  whatsapp: optionalString,
+  nationalId: optionalString,
+  physicalAddress: optionalString,
+  notes: optionalString,
 });
 
 // Helper to handle empty string inputs for optional numbers
@@ -23,26 +35,22 @@ const optionalNumber = z.preprocess(
 
 export const propertySchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
-  description: z.string().min(20, 'Description must be at least 20 characters'),
-  // Human-friendly error — Zod v4 syntax
+  // Description: no artificial minimum — let the admin decide
+  description: z.string().min(1, 'Description is required'),
   type: z.enum(
     ['SINGLE_ROOM', 'DOUBLE_ROOM', 'APARTMENT', 'HOUSE', 'STUDIO', 'HOSTEL'] as const,
     { message: 'Please select a property type' },
   ),
-  // Require price, but cleanly cast strings to numbers
   price: z.preprocess(
-  (v) => (v === '' || v === undefined || v === null || Number.isNaN(Number(v)) ? undefined : Number(v)),
-  z.number({ message: 'Price is required' }).min(1, 'Price must be greater than 0'),
-),
-  
-  // Use our helper for all optional numeric fields
+    (v) => (v === '' || v === undefined || v === null || Number.isNaN(Number(v)) ? undefined : Number(v)),
+    z.number({ message: 'Price is required' }).min(1, 'Price must be greater than 0'),
+  ),
   bedrooms: z.preprocess((v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)), z.number().min(1).optional()),
   bathrooms: z.preprocess((v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)), z.number().min(1).optional()),
   securityDeposit: z.preprocess((v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)), z.number().min(0).optional()),
   floor: z.preprocess((v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)), z.number().min(0).optional()),
   latitude: optionalNumber,
   longitude: optionalNumber,
-  
   area: z.string().min(2, 'Area is required'),
   address: z.string().optional(),
   furnishing: z.enum(['FURNISHED', 'SEMI_FURNISHED', 'UNFURNISHED']).optional(),
