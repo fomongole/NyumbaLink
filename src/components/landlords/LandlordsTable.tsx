@@ -56,10 +56,12 @@ export default function LandlordsTable() {
   const [selected, setSelected] = useState<Landlord | null>(null);
   const [search, setSearch] = useState('');
 
-  const { data: landlords = [], isLoading } = useQuery({
+  const { data: landlordsResponse, isLoading } = useQuery({
     queryKey: ['landlords'],
-    queryFn: landlordsApi.getAll,
+    queryFn: () => landlordsApi.getAll(),
   });
+
+  const landlords = landlordsResponse?.data ?? [];
 
   const filtered = search
     ? landlords.filter(
@@ -87,7 +89,6 @@ export default function LandlordsTable() {
   return (
     <>
       <Card>
-        {/* Updated responsive CardHeader */}
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <CardTitle>All Landlords</CardTitle>
@@ -98,7 +99,6 @@ export default function LandlordsTable() {
                 : ''}
             </CardDescription>
           </div>
-          {/* Updated flexible button wrapper */}
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
@@ -110,7 +110,7 @@ export default function LandlordsTable() {
               <Download className="h-4 w-4 mr-2" />
               Export CSV
             </Button>
-            <Button 
+            <Button
               onClick={() => { setSelected(null); setSheetOpen(true); }}
               className="flex-1 sm:flex-none"
             >

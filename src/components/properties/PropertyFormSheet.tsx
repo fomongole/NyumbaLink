@@ -67,11 +67,14 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
   const isEditing = !!property;
   const queryClient = useQueryClient();
 
-  const { data: landlords = [] } = useQuery({
+  // ── Landlords: API now returns PaginatedResponse<Landlord> ───────────────
+  const { data: landlordsResponse } = useQuery({
     queryKey: ['landlords'],
-    queryFn: landlordsApi.getAll,
+    queryFn: () => landlordsApi.getAll(),
   });
+  const landlords = landlordsResponse?.data ?? [];
 
+  // ── Districts: still returns a plain array ───────────────────────────────
   const { data: districts = [] } = useQuery({
     queryKey: ['districts'],
     queryFn: districtsApi.getAll,
@@ -158,12 +161,10 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
     },
   });
 
-  // Called when Zod validation fails on submit — tell the user clearly
   const onValidationError = () => {
     toast.error('Please fill in all required fields before submitting.');
   };
 
-  // Helper: setValue that also triggers validation so errors appear immediately
   const setValidatedValue = (
     field: keyof PropertyFormData,
     value: unknown,
@@ -177,7 +178,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
     </p>
   );
 
-  // Reusable error message component
   const FieldError = ({ message }: { message?: string }) =>
     message ? <p className="text-sm text-destructive mt-1">{message}</p> : null;
 
@@ -202,11 +202,8 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
         >
           <SectionLabel>Basic Information</SectionLabel>
 
-          {/* Title */}
           <div className="space-y-1.5">
-            <Label>
-              Title <span className="text-destructive">*</span>
-            </Label>
+            <Label>Title <span className="text-destructive">*</span></Label>
             <Input
               placeholder="e.g. Spacious 2BR Apartment in Kololo"
               {...register('title')}
@@ -215,11 +212,8 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             <FieldError message={errors.title?.message} />
           </div>
 
-          {/* Description */}
           <div className="space-y-1.5">
-            <Label>
-              Description <span className="text-destructive">*</span>
-            </Label>
+            <Label>Description <span className="text-destructive">*</span></Label>
             <Textarea
               placeholder="Describe the property in detail... (min. 20 characters)"
               rows={4}
@@ -229,21 +223,16 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             <FieldError message={errors.description?.message} />
           </div>
 
-          {/* Type + Price */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>
-                Property Type <span className="text-destructive">*</span>
-              </Label>
+              <Label>Property Type <span className="text-destructive">*</span></Label>
               <Select
                 value={watch('type') ?? ''}
                 onValueChange={(v) =>
                   setValidatedValue('type', v as PropertyFormData['type'])
                 }
               >
-                <SelectTrigger
-                  className={errors.type ? 'border-destructive' : ''}
-                >
+                <SelectTrigger className={errors.type ? 'border-destructive' : ''}>
                   <SelectValue placeholder="Select type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -259,9 +248,7 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
 
             <div className="space-y-1.5">
               <Label>
-                {fieldConfig?.isHostel
-                  ? 'Starting Price (UGX)'
-                  : 'Monthly Rent (UGX)'}
+                {fieldConfig?.isHostel ? 'Starting Price (UGX)' : 'Monthly Rent (UGX)'}
                 <span className="text-destructive"> *</span>
               </Label>
               <Input
@@ -279,7 +266,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             </div>
           </div>
 
-          {/* Hostel notice banner */}
           {fieldConfig?.isHostel && (
             <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm">
               <Info className="h-4 w-4 mt-0.5 shrink-0" />
@@ -291,7 +277,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             </div>
           )}
 
-          {/* Bedrooms + Bathrooms (conditional) */}
           {(fieldConfig?.showBedrooms || fieldConfig?.showBathrooms) && (
             <div className="grid grid-cols-2 gap-4">
               {fieldConfig.showBedrooms && (
@@ -309,12 +294,9 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             </div>
           )}
 
-          {/* Area + Address */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>
-                Area / Neighbourhood <span className="text-destructive">*</span>
-              </Label>
+              <Label>Area / Neighbourhood <span className="text-destructive">*</span></Label>
               <Input
                 placeholder="e.g. Kololo"
                 {...register('area')}
@@ -324,51 +306,32 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             </div>
             <div className="space-y-1.5">
               <Label>Street Address</Label>
-              <Input
-                placeholder="e.g. Plot 23, Acacia Ave"
-                {...register('address')}
-              />
+              <Input placeholder="e.g. Plot 23, Acacia Ave" {...register('address')} />
             </div>
           </div>
 
-          {/* Geolocation */}
           <SectionLabel>Geolocation (GPS Coordinates)</SectionLabel>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Latitude</Label>
-              <Input
-                type="number"
-                step="any"
-                placeholder="e.g. 0.347596"
-                {...register('latitude')}
-              />
+              <Input type="number" step="any" placeholder="e.g. 0.347596" {...register('latitude')} />
               <p className="text-[10px] text-gray-500">Copy/paste from Google Maps</p>
             </div>
             <div className="space-y-1.5">
               <Label>Longitude</Label>
-              <Input
-                type="number"
-                step="any"
-                placeholder="e.g. 32.582520"
-                {...register('longitude')}
-              />
+              <Input type="number" step="any" placeholder="e.g. 32.582520" {...register('longitude')} />
             </div>
           </div>
 
-          {/* District + Landlord */}
           <SectionLabel>District & Landlord</SectionLabel>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>
-                District <span className="text-destructive">*</span>
-              </Label>
+              <Label>District <span className="text-destructive">*</span></Label>
               <Select
                 value={watch('districtId') ?? ''}
                 onValueChange={(v) => setValidatedValue('districtId', v)}
               >
-                <SelectTrigger
-                  className={errors.districtId ? 'border-destructive' : ''}
-                >
+                <SelectTrigger className={errors.districtId ? 'border-destructive' : ''}>
                   <SelectValue placeholder="Select district" />
                 </SelectTrigger>
                 <SelectContent>
@@ -383,16 +346,12 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             </div>
 
             <div className="space-y-1.5">
-              <Label>
-                Landlord <span className="text-destructive">*</span>
-              </Label>
+              <Label>Landlord <span className="text-destructive">*</span></Label>
               <Select
                 value={watch('landlordId') ?? ''}
                 onValueChange={(v) => setValidatedValue('landlordId', v)}
               >
-                <SelectTrigger
-                  className={errors.landlordId ? 'border-destructive' : ''}
-                >
+                <SelectTrigger className={errors.landlordId ? 'border-destructive' : ''}>
                   <SelectValue placeholder="Select landlord" />
                 </SelectTrigger>
                 <SelectContent>
@@ -407,7 +366,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             </div>
           </div>
 
-          {/* Rental Terms (conditional) */}
           {(fieldConfig?.showFurnishing ||
             fieldConfig?.showLeaseTerm ||
             fieldConfig?.showSecurityDeposit ||
@@ -426,9 +384,7 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                         onValueChange={(v) =>
                           setValidatedValue(
                             'furnishing',
-                            v === UNSET
-                              ? undefined
-                              : (v as PropertyFormData['furnishing']),
+                            v === UNSET ? undefined : (v as PropertyFormData['furnishing']),
                           )
                         }
                       >
@@ -454,9 +410,7 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                         onValueChange={(v) =>
                           setValidatedValue(
                             'leaseTerm',
-                            v === UNSET
-                              ? undefined
-                              : (v as PropertyFormData['leaseTerm']),
+                            v === UNSET ? undefined : (v as PropertyFormData['leaseTerm']),
                           )
                         }
                       >
@@ -482,22 +436,13 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                   {fieldConfig.showSecurityDeposit && (
                     <div className="space-y-1.5">
                       <Label>Security Deposit (UGX)</Label>
-                      <Input
-                        type="number"
-                        placeholder="e.g. 500000"
-                        {...register('securityDeposit')}
-                      />
+                      <Input type="number" placeholder="e.g. 500000" {...register('securityDeposit')} />
                     </div>
                   )}
                   {fieldConfig.showFloor && (
                     <div className="space-y-1.5">
                       <Label>Floor / Level</Label>
-                      <Input
-                        type="number"
-                        min={0}
-                        placeholder="e.g. 3 (0 = ground)"
-                        {...register('floor')}
-                      />
+                      <Input type="number" min={0} placeholder="e.g. 3 (0 = ground)" {...register('floor')} />
                     </div>
                   )}
                 </div>
@@ -508,7 +453,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                   <Label>Available From</Label>
                   <Input type="date" {...register('availableFrom')} />
                 </div>
-
                 {fieldConfig.showParking && (
                   <div className="space-y-1.5">
                     <Label>Parking Available</Label>
@@ -518,14 +462,9 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                         id="parkingAvailable"
                         className="h-4 w-4 accent-primary"
                         checked={watch('parkingAvailable') ?? false}
-                        onChange={(e) =>
-                          setValue('parkingAvailable', e.target.checked)
-                        }
+                        onChange={(e) => setValue('parkingAvailable', e.target.checked)}
                       />
-                      <label
-                        htmlFor="parkingAvailable"
-                        className="text-sm text-gray-700 cursor-pointer"
-                      >
+                      <label htmlFor="parkingAvailable" className="text-sm text-gray-700 cursor-pointer">
                         Yes, parking is available
                       </label>
                     </div>
@@ -535,7 +474,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             </>
           )}
 
-          {/* Amenities */}
           <SectionLabel>Additional</SectionLabel>
           <div className="space-y-1.5">
             <Label>Amenities</Label>
@@ -544,67 +482,37 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
               onChange={(e) =>
                 setValue(
                   'amenities',
-                  e.target.value
-                    .split(',')
-                    .map((a) => a.trim())
-                    .filter(Boolean),
+                  e.target.value.split(',').map((a) => a.trim()).filter(Boolean),
                 )
               }
               defaultValue={property?.amenities?.join(', ') ?? ''}
             />
-            <p className="text-xs text-gray-500">
-              Separate each amenity with a comma
-            </p>
+            <p className="text-xs text-gray-500">Separate each amenity with a comma</p>
           </div>
 
-          {/* Summary of errors shown at bottom if any exist after first submit attempt */}
           {isSubmitted && Object.keys(errors).length > 0 && (
             <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-              <p className="font-medium mb-1">
-                Please fix the following before submitting:
-              </p>
+              <p className="font-medium mb-1">Please fix the following before submitting:</p>
               <ul className="list-disc list-inside space-y-0.5">
                 {errors.title && <li>Title — {errors.title.message}</li>}
-                {errors.description && (
-                  <li>Description — {errors.description.message}</li>
-                )}
+                {errors.description && <li>Description — {errors.description.message}</li>}
                 {errors.type && <li>Property Type — {errors.type.message}</li>}
                 {errors.price && <li>Price — {errors.price.message}</li>}
                 {errors.area && <li>Area — {errors.area.message}</li>}
-                {errors.districtId && (
-                  <li>District — {errors.districtId.message}</li>
-                )}
-                {errors.landlordId && (
-                  <li>Landlord — {errors.landlordId.message}</li>
-                )}
+                {errors.districtId && <li>District — {errors.districtId.message}</li>}
+                {errors.landlordId && <li>Landlord — {errors.landlordId.message}</li>}
               </ul>
             </div>
           )}
 
           <div className="flex gap-3 pt-6 mt-4">
-            <Button
-              type="button"
-              variant="outline"
-              className="flex-1"
-              onClick={onClose}
-            >
+            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
               Cancel
             </Button>
-            <Button
-              type="submit"
-              className="flex-1"
-              disabled={mutation.isPending}
-            >
+            <Button type="submit" className="flex-1" disabled={mutation.isPending}>
               {mutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : isEditing ? (
-                'Update Property'
-              ) : (
-                'Create Property'
-              )}
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
+              ) : isEditing ? 'Update Property' : 'Create Property'}
             </Button>
           </div>
         </form>

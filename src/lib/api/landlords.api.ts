@@ -1,9 +1,20 @@
 import apiClient from './client';
-import { Landlord, CreateLandlordPayload, UpdateLandlordPayload } from '@/types';
+import {
+  Landlord,
+  CreateLandlordPayload,
+  UpdateLandlordPayload,
+  PaginatedResponse,
+} from '@/types';
 
 export const landlordsApi = {
-  getAll: async (): Promise<Landlord[]> => {
-    const { data } = await apiClient.get<Landlord[]>('/landlords');
+  getAll: async (params?: {
+    search?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<PaginatedResponse<Landlord>> => {
+    const { data } = await apiClient.get<PaginatedResponse<Landlord>>('/landlords', {
+      params,
+    });
     return data;
   },
 
