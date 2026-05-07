@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Plus, Pencil, Trash2, Images, ToggleLeft,
-  ToggleRight, Eye, RotateCcw, Download,
+  ToggleRight, Eye, Download,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -21,6 +21,12 @@ import {
   Table, TableBody, TableCell,
   TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 import PropertyFormSheet from './PropertyFormSheet';
 import ImageUploadManager from './ImageUploadManager';
@@ -82,6 +88,16 @@ function exportToCsv(properties: Property[]) {
   URL.revokeObjectURL(url);
 }
 
+// Small helper so each tooltip is one line
+function ActionTooltip({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side="top" className="text-xs">{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 export default function PropertiesTable() {
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<PropertyFilters & { search?: string }>(DEFAULT_FILTERS);
@@ -139,23 +155,13 @@ export default function PropertiesTable() {
     onError: () => toast.error('Failed to update status.'),
   });
 
-  const restoreMutation = useMutation({
-    mutationFn: (id: string) => propertiesApi.restore(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['properties'] });
-      toast.success('Property restored');
-    },
-    onError: () => toast.error('Failed to restore property.'),
-  });
-
   const handleEdit = (p: Property) => { setSelected(p); setFormOpen(true); };
   const handleDelete = (p: Property) => { setSelected(p); setDeleteOpen(true); };
   const handleImages = (p: Property) => { setSelected(p); setImagesOpen(true); };
 
   return (
-    <>
+    <TooltipProvider delayDuration={300}>
       <Card>
-        {/* Updated responsive CardHeader */}
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <CardTitle>All Properties</CardTitle>
@@ -166,7 +172,6 @@ export default function PropertiesTable() {
                 : ''}
             </CardDescription>
           </div>
-          {/* Updated flexible button wrapper */}
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
@@ -178,7 +183,7 @@ export default function PropertiesTable() {
               <Download className="h-4 w-4 mr-2" />
               Export CSV
             </Button>
-            <Button 
+            <Button
               onClick={() => { setSelected(null); setFormOpen(true); }}
               className="flex-1 sm:flex-none"
             >
@@ -291,46 +296,64 @@ export default function PropertiesTable() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <Link href={`/properties/${property.id}`}>
-                              <Button size="sm" variant="outline" title="View details">
-                                <Eye className="h-3.5 w-3.5" />
+                            <ActionTooltip label="View details">
+                              <Link href={`/properties/${property.id}`}>
+                                <Button size="sm" variant="outline">
+                                  <Eye className="h-3.5 w-3.5" />
+                                </Button>
+                              </Link>
+                            </ActionTooltip>
+
+                            <ActionTooltip label="Manage images">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleImages(property)}
+                              >
+                                <Images className="h-3.5 w-3.5" />
                               </Button>
-                            </Link>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              title="Manage Images"
-                              onClick={() => handleImages(property)}
+                            </ActionTooltip>
+
+                            <ActionTooltip
+                              label={
+                                property.status === 'AVAILABLE'
+                                  ? 'Mark as rented'
+                                  : 'Mark as available'
+                              }
                             >
-                              <Images className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              title="Toggle Status"
-                              onClick={() => toggleMutation.mutate(property.id)}
-                              disabled={toggleMutation.isPending}
-                            >
-                              {property.status === 'AVAILABLE' ? (
-                                <ToggleRight className="h-3.5 w-3.5 text-green-600" />
-                              ) : (
-                                <ToggleLeft className="h-3.5 w-3.5 text-gray-400" />
-                              )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleEdit(property)}
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDelete(property)}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => toggleMutation.mutate(property.id)}
+                                disabled={toggleMutation.isPending}
+                              >
+                                {property.status === 'AVAILABLE' ? (
+                                  <ToggleRight className="h-3.5 w-3.5 text-green-600" />
+                                ) : (
+                                  <ToggleLeft className="h-3.5 w-3.5 text-gray-400" />
+                                )}
+                              </Button>
+                            </ActionTooltip>
+
+                            <ActionTooltip label="Edit property">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleEdit(property)}
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                            </ActionTooltip>
+
+                            <ActionTooltip label="Delete property">
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDelete(property)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </ActionTooltip>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -365,6 +388,6 @@ export default function PropertiesTable() {
         title="Delete Property"
         description={`Are you sure you want to delete "${selected?.title}"? This action is reversible — you can restore the property later.`}
       />
-    </>
+    </TooltipProvider>
   );
 }

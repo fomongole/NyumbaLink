@@ -21,6 +21,12 @@ import {
   Table, TableBody, TableCell,
   TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 import LandlordFormSheet from './LandlordFormSheet';
 import DeleteDialog from '@/components/shared/DeleteDialog';
@@ -47,6 +53,15 @@ function exportToCsv(landlords: Landlord[]) {
   a.download = `nyumbalink-landlords-${new Date().toISOString().split('T')[0]}.csv`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function ActionTooltip({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side="top" className="text-xs">{label}</TooltipContent>
+    </Tooltip>
+  );
 }
 
 export default function LandlordsTable() {
@@ -87,7 +102,7 @@ export default function LandlordsTable() {
   const handleDelete = (l: Landlord) => { setSelected(l); setDeleteOpen(true); };
 
   return (
-    <>
+    <TooltipProvider delayDuration={300}>
       <Card>
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
@@ -193,25 +208,33 @@ export default function LandlordsTable() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1.5">
-                          <Link href={`/landlords/${landlord.id}`}>
-                            <Button size="sm" variant="outline" title="View profile">
-                              <Eye className="h-3.5 w-3.5" />
+                          <ActionTooltip label="View profile">
+                            <Link href={`/landlords/${landlord.id}`}>
+                              <Button size="sm" variant="outline">
+                                <Eye className="h-3.5 w-3.5" />
+                              </Button>
+                            </Link>
+                          </ActionTooltip>
+
+                          <ActionTooltip label="Edit landlord">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEdit(landlord)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
                             </Button>
-                          </Link>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEdit(landlord)}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDelete(landlord)}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                          </ActionTooltip>
+
+                          <ActionTooltip label="Deactivate landlord">
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDelete(landlord)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </ActionTooltip>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -237,6 +260,6 @@ export default function LandlordsTable() {
         title="Deactivate Landlord"
         description={`Are you sure you want to deactivate ${selected?.name}? They will no longer appear in the system.`}
       />
-    </>
+    </TooltipProvider>
   );
 }

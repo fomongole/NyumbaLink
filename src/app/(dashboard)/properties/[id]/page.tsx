@@ -124,6 +124,11 @@ export default function PropertyDetailPage({
   const primaryImage = property.images.find((i) => i.isPrimary) ?? property.images[0];
   const displayImage = activeImage ?? primaryImage?.url;
 
+  // Coerce to number — the API may return latitude/longitude as strings
+  const lat = property.latitude != null ? Number(property.latitude) : null;
+  const lng = property.longitude != null ? Number(property.longitude) : null;
+  const hasCoords = lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng);
+
   return (
     <>
       <Header
@@ -344,18 +349,18 @@ export default function PropertyDetailPage({
                       <DetailRow icon={MapPin} label="Address" value={property.address} />
                     )}
 
-                    {property.latitude && property.longitude && (
+                    {hasCoords && (
                       <div className="flex items-start gap-2.5">
                         <Navigation className="h-4 w-4 text-gray-400 mt-0.5 flex-shrink-0" />
                         <div className="flex-1 flex justify-between gap-2">
                           <span className="text-sm text-gray-500">GPS</span>
                           <a
-                            href={`https://www.google.com/maps/search/?api=1&query=${property.latitude},${property.longitude}`}
+                            href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`}
                             target="_blank"
                             rel="noreferrer"
                             className="text-sm font-medium text-primary hover:underline text-right"
                           >
-                            {property.latitude.toFixed(4)}, {property.longitude.toFixed(4)}
+                            {lat!.toFixed(4)}, {lng!.toFixed(4)}
                           </a>
                         </div>
                       </div>

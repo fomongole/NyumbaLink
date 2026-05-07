@@ -51,14 +51,16 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className="hidden md:flex w-64 min-h-screen bg-gray-900 text-white flex-col shrink-0">
-        <div className="py-5 border-b border-gray-800">
+      {/* sticky + h-screen keeps the sidebar fixed while main content scrolls */}
+      <aside className="hidden md:flex w-64 h-screen sticky top-0 bg-gray-900 text-white flex-col shrink-0">
+        <div className="py-5 border-b border-gray-800 shrink-0">
           <div className="dark transform scale-90 origin-left">
             <Logo />
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-1">
+        {/* overflow-y-auto lets nav scroll if items overflow */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive =
@@ -83,7 +85,7 @@ export default function Sidebar() {
           })}
         </nav>
 
-        <div className="px-3 py-4 border-t border-gray-800 space-y-1">
+        <div className="px-3 py-4 border-t border-gray-800 space-y-1 shrink-0">
           <Link
             href="/settings"
             className={cn(
