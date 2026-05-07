@@ -33,6 +33,21 @@ const optionalNumber = z.preprocess(
   z.number().optional()
 );
 
+// Accepts YYYY-MM-DD (from <input type="date">) or a full ISO string,
+// and normalises to a full ISO 8601 datetime string for the backend.
+// Empty string → undefined so the field is omitted entirely.
+const availableFromField = z
+  .string()
+  .optional()
+  .transform((v) => {
+    if (!v || v === '') return undefined;
+    // Already a full ISO string — pass through unchanged
+    if (v.includes('T')) return v;
+    // Date-only string from the date picker — convert to midnight UTC ISO
+    const date = new Date(v);
+    return isNaN(date.getTime()) ? undefined : date.toISOString();
+  });
+
 export const propertySchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
   // Description: no artificial minimum — let the admin decide
@@ -55,7 +70,7 @@ export const propertySchema = z.object({
   address: z.string().optional(),
   furnishing: z.enum(['FURNISHED', 'SEMI_FURNISHED', 'UNFURNISHED']).optional(),
   leaseTerm: z.enum(['MONTHLY', 'QUARTERLY', 'BIANNUAL', 'ANNUAL']).optional(),
-  availableFrom: z.string().optional(),
+  availableFrom: availableFromField,
   parkingAvailable: z.boolean().optional(),
   landlordId: z.string().uuid('Select a landlord'),
   districtId: z.string().uuid('Select a district'),
