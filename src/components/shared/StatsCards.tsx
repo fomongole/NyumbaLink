@@ -23,9 +23,11 @@ export default function StatsCards() {
     queryFn: propertiesApi.getStats,
   });
 
-  const { data: landlords, isLoading: loadingLandlords } = useQuery({
+  // ── Wrap in arrow function so React Query's context object is not passed
+  //    as the params argument. Extract .data.length for the count.
+  const { data: landlordsResponse, isLoading: loadingLandlords } = useQuery({
     queryKey: ['landlords'],
-    queryFn: landlordsApi.getAll,
+    queryFn: () => landlordsApi.getAll(),
   });
 
   const primaryStats = [
@@ -60,7 +62,7 @@ export default function StatsCards() {
     },
     {
       title: 'Landlords',
-      value: landlords?.length ?? 0,
+      value: landlordsResponse?.data?.length ?? 0,  // ← .data.length, not .length
       icon: Users,
       color: 'text-purple-600',
       bg: 'bg-purple-50',
@@ -131,7 +133,7 @@ export default function StatsCards() {
           </CardContent>
         </Card>
 
-        {/* Total Views */}
+        {/* Top Viewed */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Top Viewed Property</CardTitle>
