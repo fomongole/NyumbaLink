@@ -205,6 +205,7 @@ export interface PropertyStats {
   addedThisWeek: number;
   topViewed: Property[];
   topEnquired: Property[];
+  byType: Record<string, number>;
 }
 
 // ─── Hostel Rooms ─────────────────────────────────────────────────────────────

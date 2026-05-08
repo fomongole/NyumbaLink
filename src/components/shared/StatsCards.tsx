@@ -11,6 +11,26 @@ import { Badge } from '@/components/ui/badge';
 import { propertiesApi } from '@/lib/api/properties.api';
 import { contactsApi } from '@/lib/api/contacts.api';
 
+const TYPE_LABELS: Record<string, string> = {
+  RESIDENTIAL_HOUSE: 'Residential House',
+  APARTMENT:         'Apartment',
+  AIRBNB:            'AirBnB',
+  OFFICE_SPACE:      'Office Space',
+  BUSINESS_SPACE:    'Business Space',
+  HOSTEL:            'Hostel',
+  HOTEL_LODGE:       'Hotel / Lodge',
+};
+
+const TYPE_COLORS: Record<string, string> = {
+  RESIDENTIAL_HOUSE: 'bg-blue-500',
+  APARTMENT:         'bg-violet-500',
+  AIRBNB:            'bg-pink-500',
+  OFFICE_SPACE:      'bg-amber-500',
+  BUSINESS_SPACE:    'bg-orange-500',
+  HOSTEL:            'bg-teal-500',
+  HOTEL_LODGE:       'bg-cyan-500',
+};
+
 export default function StatsCards() {
   const { data: stats, isLoading: loadingStats } = useQuery({
     queryKey: ['properties', 'stats'],
@@ -63,8 +83,12 @@ export default function StatsCards() {
     },
   ];
 
+  const byType = stats?.byType ?? {};
+  const total = stats?.total ?? 0;
+
   return (
     <div className="space-y-4">
+      {/* Primary stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {primaryStats.map((stat) => {
           const Icon = stat.icon;
@@ -97,6 +121,55 @@ export default function StatsCards() {
         })}
       </div>
 
+      {/* Listings by property type */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium text-gray-600">
+            Listings by Property Type
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingStats ? (
+            <div className="space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-6 w-full" />
+              ))}
+            </div>
+          ) : total === 0 ? (
+            <p className="text-sm text-gray-400">No listings yet</p>
+          ) : (
+            <div className="space-y-3">
+              {Object.entries(TYPE_LABELS).map(([key, label]) => {
+                const count = byType[key] ?? 0;
+                if (count === 0) return null;
+                const pct = Math.round((count / total) * 100);
+                const barColor = TYPE_COLORS[key] ?? 'bg-gray-400';
+                return (
+                  <div key={key}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm text-gray-700">{label}</span>
+                      <span className="text-sm font-semibold text-gray-900">
+                        {count}
+                        <span className="text-xs font-normal text-gray-400 ml-1">
+                          ({pct}%)
+                        </span>
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-2">
+                      <div
+                        className={`${barColor} h-2 rounded-full transition-all`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Secondary stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
