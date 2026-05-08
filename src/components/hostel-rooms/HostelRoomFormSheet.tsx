@@ -22,12 +22,15 @@ import {
 } from '@/components/ui/select';
 
 import { hostelRoomsApi } from '@/lib/api/hostel-rooms.api';
-import { HostelRoom } from '@/types';
+import { BillingCycle, HostelRoom } from '@/types';
 
 const roomSchema = z.object({
   roomNumber: z.string().min(1, 'Room number is required'),
   type: z.enum(['SINGLE', 'DOUBLE', 'SHARED']),
   price: z.preprocess((v) => Number(v), z.number().min(1, 'Price is required')),
+  billingCycle: z.enum(['MONTHLY', 'FOUR_MONTHS', 'BIANNUAL', 'ANNUAL'] as const, {
+    message: 'Select a billing period',
+  }),
   floor: z.preprocess(
     (v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)),
     z.number().min(0).optional(),
@@ -42,6 +45,13 @@ const ROOM_TYPES = [
   { value: 'SINGLE', label: 'Single (1 occupant)' },
   { value: 'DOUBLE', label: 'Double (2 occupants)' },
   { value: 'SHARED', label: 'Shared / Dormitory' },
+];
+
+const BILLING_OPTIONS: { value: BillingCycle; label: string }[] = [
+  { value: 'MONTHLY',     label: 'Monthly' },
+  { value: 'FOUR_MONTHS', label: '4 Months' },
+  { value: 'BIANNUAL',    label: 'Biannual (6 months)' },
+  { value: 'ANNUAL',      label: 'Annual (1 year)' },
 ];
 
 interface Props {
@@ -66,15 +76,16 @@ export default function HostelRoomFormSheet({ open, onClose, propertyId, room }:
     resolver: zodResolver(roomSchema) as any,
   });
 
-  useEffect(() => {
+useEffect(() => {
     if (room) {
       reset({
-        roomNumber: room.roomNumber,
-        type: room.type,
-        price: room.price,
-        floor: room.floor,
-        description: room.description ?? '',
-        amenities: room.amenities ?? [],
+        roomNumber:   room.roomNumber,
+        type:         room.type,
+        price:        room.price,
+        billingCycle: room.billingCycle as RoomFormData['billingCycle'],
+        floor:        room.floor,
+        description:  room.description ?? '',
+        amenities:    room.amenities ?? [],
       });
     } else {
       reset({ roomNumber: '', description: '', amenities: [] });
@@ -138,17 +149,38 @@ export default function HostelRoomFormSheet({ open, onClose, propertyId, room }:
             </div>
           </div>
 
-          {/* Price + Floor */}
+          {/* Price + Billing Cycle */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Price (UGX/month) <span className="text-destructive">*</span></Label>
+              <Label>Price (UGX) <span className="text-destructive">*</span></Label>
               <Input type="number" placeholder="e.g. 350000" {...register('price')} />
               {errors.price && <p className="text-xs text-destructive">{errors.price.message}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label>Floor / Level</Label>
-              <Input type="number" min={0} placeholder="e.g. 2" {...register('floor')} />
+              <Label>Billing Period <span className="text-destructive">*</span></Label>
+              <Select
+                value={watch('billingCycle') ?? ''}
+                onValueChange={(v) => setValue('billingCycle', v as RoomFormData['billingCycle'])}
+              >
+                <SelectTrigger className={errors.billingCycle ? 'border-destructive' : ''}>
+                  <SelectValue placeholder="Select period" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BILLING_OPTIONS.map((b) => (
+                    <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.billingCycle && (
+                <p className="text-xs text-destructive">{errors.billingCycle.message}</p>
+              )}
             </div>
+          </div>
+
+          {/* Floor */}
+          <div className="space-y-1.5">
+            <Label>Floor / Level</Label>
+            <Input type="number" min={0} placeholder="e.g. 2 (0 = ground)" {...register('floor')} />
           </div>
 
           {/* Description */}
