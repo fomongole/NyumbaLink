@@ -1,20 +1,38 @@
 import { z } from 'zod';
 
+// ─── Auth ─────────────────────────────────────────────────────────────────────
 export const loginSchema = z.object({
   email: z.string().email('Enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
-// Converts empty strings to undefined so optional unique fields
-// (nationalId, email) are not sent as '' and do not hit the unique constraint
+// ─── Shared helpers ───────────────────────────────────────────────────────────
+/** Converts empty strings to undefined so optional unique DB fields get NULL */
 const optionalString = z
   .string()
   .optional()
   .transform((v) => (v === '' ? undefined : v));
 
-export const landlordSchema = z.object({
+const optionalNumber = z.preprocess(
+  (v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)),
+  z.number().optional(),
+);
+
+const availableFromField = z
+  .string()
+  .optional()
+  .transform((v) => {
+    if (!v || v === '') return undefined;
+    if (v.includes('T')) return v;
+    const date = new Date(v);
+    return isNaN(date.getTime()) ? undefined : date.toISOString();
+  });
+
+// ─── Contact (replaces Landlord) ─────────────────────────────────────────────
+export const contactSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   phone: z.string().min(10, 'Enter a valid phone number'),
+  role: z.enum(['OWNER', 'AGENT'], { message: 'Select a role' }),
   email: z
     .string()
     .email('Enter a valid email')
@@ -27,56 +45,67 @@ export const landlordSchema = z.object({
   notes: optionalString,
 });
 
-// Helper to handle empty string inputs for optional numbers
-const optionalNumber = z.preprocess(
-  (v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)),
-  z.number().optional()
-);
+export type ContactFormInput = z.input<typeof contactSchema>;
+export type ContactFormData = z.output<typeof contactSchema>;
 
-// Accepts YYYY-MM-DD (from <input type="date">) or a full ISO string,
-// and normalises to a full ISO 8601 datetime string for the backend.
-// Empty string → undefined so the field is omitted entirely.
-const availableFromField = z
-  .string()
-  .optional()
-  .transform((v) => {
-    if (!v || v === '') return undefined;
-    // Already a full ISO string — pass through unchanged
-    if (v.includes('T')) return v;
-    // Date-only string from the date picker — convert to midnight UTC ISO
-    const date = new Date(v);
-    return isNaN(date.getTime()) ? undefined : date.toISOString();
-  });
-
+// ─── Property ─────────────────────────────────────────────────────────────────
 export const propertySchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters'),
-  // Description: no artificial minimum — let the admin decide
   description: z.string().min(1, 'Description is required'),
   type: z.enum(
-    ['SINGLE_ROOM', 'DOUBLE_ROOM', 'APARTMENT', 'HOUSE', 'STUDIO', 'HOSTEL'] as const,
+    [
+      'RESIDENTIAL_HOUSE',
+      'APARTMENT',
+      'AIRBNB',
+      'OFFICE_SPACE',
+      'BUSINESS_SPACE',
+      'HOSTEL',
+      'HOTEL_LODGE',
+    ] as const,
     { message: 'Please select a property type' },
   ),
+  residentialSubtype: z.enum(['SINGLE', 'DOUBLE'] as const).optional(),
   price: z.preprocess(
-    (v) => (v === '' || v === undefined || v === null || Number.isNaN(Number(v)) ? undefined : Number(v)),
+    (v) =>
+      v === '' || v === undefined || v === null || Number.isNaN(Number(v))
+        ? undefined
+        : Number(v),
     z.number({ message: 'Price is required' }).min(1, 'Price must be greater than 0'),
   ),
-  bedrooms: z.preprocess((v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)), z.number().min(1).optional()),
-  bathrooms: z.preprocess((v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)), z.number().min(1).optional()),
-  securityDeposit: z.preprocess((v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)), z.number().min(0).optional()),
-  floor: z.preprocess((v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)), z.number().min(0).optional()),
+  billingCycle: z
+    .enum(['DAILY', 'MONTHLY', 'QUARTERLY', 'FOUR_MONTHS', 'BIANNUAL', 'ANNUAL'] as const)
+    .optional(),
+  bedrooms: z.preprocess(
+    (v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)),
+    z.number().min(1).optional(),
+  ),
+  bathrooms: z.preprocess(
+    (v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)),
+    z.number().min(1).optional(),
+  ),
+  securityDeposit: z.preprocess(
+    (v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)),
+    z.number().min(0).optional(),
+  ),
+  floor: z.preprocess(
+    (v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)),
+    z.number().min(0).optional(),
+  ),
   latitude: optionalNumber,
   longitude: optionalNumber,
   area: z.string().min(2, 'Area is required'),
   address: z.string().optional(),
   furnishing: z.enum(['FURNISHED', 'SEMI_FURNISHED', 'UNFURNISHED']).optional(),
-  leaseTerm: z.enum(['MONTHLY', 'QUARTERLY', 'BIANNUAL', 'ANNUAL']).optional(),
   availableFrom: availableFromField,
   parkingAvailable: z.boolean().optional(),
-  landlordId: z.string().uuid('Select a landlord'),
+  contactId: z.string().uuid('Select a contact'),
   districtId: z.string().uuid('Select a district'),
   amenities: z.array(z.string()).optional(),
 });
 
+export type PropertyFormData = z.infer<typeof propertySchema>;
+
+// ─── Users ────────────────────────────────────────────────────────────────────
 export const createAdminSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Enter a valid email address'),
@@ -101,13 +130,6 @@ export const changePasswordSchema = z
   });
 
 export type LoginFormData = z.infer<typeof loginSchema>;
-
-// LandlordFormInput  = shape of the raw form fields (empty strings allowed)
-// LandlordFormData   = shape after Zod transforms (empty strings → undefined)
-export type LandlordFormInput = z.input<typeof landlordSchema>;
-export type LandlordFormData = z.output<typeof landlordSchema>;
-
-export type PropertyFormData = z.infer<typeof propertySchema>;
 export type CreateAdminFormData = z.infer<typeof createAdminSchema>;
 export type UpdateProfileFormData = z.infer<typeof updateProfileSchema>;
 export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;

@@ -10,7 +10,7 @@ import {
   ArrowLeft, Pencil, Trash2, ToggleLeft, ToggleRight,
   Images, Eye, MessageCircle, MapPin, Building2, User,
   Calendar, Car, Layers, BadgeCheck, BedDouble,
-  Bath, DollarSign, Star, Navigation, Hotel,
+  Bath, DollarSign, Star, Navigation, Hotel, CalendarClock,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -26,27 +26,36 @@ import HostelRoomsPanel from '@/components/hostel-rooms/HostelRoomsPanel';
 import DeleteDialog from '@/components/shared/DeleteDialog';
 import { propertiesApi } from '@/lib/api/properties.api';
 import Header from '@/components/layout/Header';
+import { BillingCycle, ResidentialSubtype } from '@/types';
 
 const TYPE_LABELS: Record<string, string> = {
-  SINGLE_ROOM: 'Single Room',
-  DOUBLE_ROOM: 'Double Room',
-  APARTMENT: 'Apartment',
-  HOUSE: 'House',
-  STUDIO: 'Studio',
-  HOSTEL: 'Hostel',
+  RESIDENTIAL_HOUSE: 'Residential House',
+  APARTMENT:         'Apartment',
+  AIRBNB:            'AirBnB',
+  OFFICE_SPACE:      'Office Space',
+  BUSINESS_SPACE:    'Business Space',
+  HOSTEL:            'Hostel',
+  HOTEL_LODGE:       'Hotel / Lodge',
+};
+
+const SUBTYPE_LABELS: Record<ResidentialSubtype, string> = {
+  SINGLE: 'Single (1 bedroom / bedsitter)',
+  DOUBLE: 'Double (2 bedrooms)',
 };
 
 const FURNISHING_LABELS: Record<string, string> = {
-  FURNISHED: 'Furnished',
+  FURNISHED:      'Furnished',
   SEMI_FURNISHED: 'Semi-Furnished',
-  UNFURNISHED: 'Unfurnished',
+  UNFURNISHED:    'Unfurnished',
 };
 
-const LEASE_LABELS: Record<string, string> = {
-  MONTHLY: 'Monthly',
-  QUARTERLY: 'Quarterly',
-  BIANNUAL: 'Biannual',
-  ANNUAL: 'Annual',
+const BILLING_LABELS: Record<BillingCycle, string> = {
+  DAILY:       'Daily',
+  MONTHLY:     'Monthly',
+  QUARTERLY:   'Quarterly (3 months)',
+  FOUR_MONTHS: '4 Months',
+  BIANNUAL:    'Biannual (6 months)',
+  ANNUAL:      'Annual (1 year)',
 };
 
 export default function PropertyDetailPage({
@@ -124,7 +133,6 @@ export default function PropertyDetailPage({
   const primaryImage = property.images.find((i) => i.isPrimary) ?? property.images[0];
   const displayImage = activeImage ?? primaryImage?.url;
 
-  // Coerce to number — the API may return latitude/longitude as strings
   const lat = property.latitude != null ? Number(property.latitude) : null;
   const lng = property.longitude != null ? Number(property.longitude) : null;
   const hasCoords = lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng);
@@ -176,7 +184,7 @@ export default function PropertyDetailPage({
           </div>
         </div>
 
-        {/* Tabs: Overview + Rooms (hostel only) */}
+        {/* Tabs */}
         <Tabs defaultValue="overview">
           {isHostel && (
             <TabsList className="mb-4 bg-gray-100 p-1">
@@ -217,11 +225,6 @@ export default function PropertyDetailPage({
                       >
                         {property.status === 'AVAILABLE' ? 'Available' : 'Rented Out'}
                       </Badge>
-                      {isHostel && (
-                        <Badge className="bg-blue-600 text-white text-sm px-3 py-1 shadow-md">
-                          Hostel
-                        </Badge>
-                      )}
                     </div>
                   </div>
 
@@ -284,15 +287,21 @@ export default function PropertyDetailPage({
                   <CardContent className="pt-6 space-y-4">
                     <div>
                       <p className="text-xs text-gray-500 uppercase tracking-wide">
-                        {isHostel ? 'Starting Price' : 'Monthly Rent'}
+                        {isHostel ? 'Starting Price' : 'Listed Price'}
                       </p>
                       <p className="text-3xl font-bold text-gray-900">
                         UGX {Number(property.price).toLocaleString()}
                       </p>
+                      {property.billingCycle && (
+                        <p className="text-sm text-gray-500 mt-0.5">
+                          per {BILLING_LABELS[property.billingCycle].toLowerCase()}
+                        </p>
+                      )}
                       {isHostel && (
                         <p className="text-xs text-gray-400 mt-1">Individual rooms may vary</p>
                       )}
                     </div>
+
                     {property.securityDeposit && (
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <DollarSign className="h-4 w-4 text-gray-400" />
@@ -300,39 +309,28 @@ export default function PropertyDetailPage({
                       </div>
                     )}
 
-                    {!isHostel && (
-                      <div className="grid grid-cols-2 gap-3 pt-2 border-t">
-                        <div className="flex items-center gap-2">
-                          <BedDouble className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm">{property.bedrooms} Bed{property.bedrooms !== 1 ? 's' : ''}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Bath className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm">{property.bathrooms} Bath{property.bathrooms !== 1 ? 's' : ''}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Eye className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm">{property.viewCount} Views</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <MessageCircle className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm">{property.enquiryCount} Enquiries</span>
-                        </div>
+                    <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+                      {!isHostel && (
+                        <>
+                          <div className="flex items-center gap-2">
+                            <BedDouble className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm">{property.bedrooms} Bed{property.bedrooms !== 1 ? 's' : ''}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Bath className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm">{property.bathrooms} Bath{property.bathrooms !== 1 ? 's' : ''}</span>
+                          </div>
+                        </>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <Eye className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm">{property.viewCount} Views</span>
                       </div>
-                    )}
-
-                    {isHostel && (
-                      <div className="grid grid-cols-2 gap-3 pt-2 border-t">
-                        <div className="flex items-center gap-2">
-                          <Eye className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm">{property.viewCount} Views</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <MessageCircle className="h-4 w-4 text-gray-400" />
-                          <span className="text-sm">{property.enquiryCount} Enquiries</span>
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <MessageCircle className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm">{property.enquiryCount} Enquiries</span>
                       </div>
-                    )}
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -342,6 +340,15 @@ export default function PropertyDetailPage({
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <DetailRow icon={Building2} label="Type" value={TYPE_LABELS[property.type] ?? property.type} />
+
+                    {property.residentialSubtype && (
+                      <DetailRow
+                        icon={Building2}
+                        label="House Type"
+                        value={SUBTYPE_LABELS[property.residentialSubtype]}
+                      />
+                    )}
+
                     <DetailRow icon={MapPin} label="District" value={property.district.name} />
                     <DetailRow icon={MapPin} label="Area" value={property.area} />
 
@@ -369,9 +376,15 @@ export default function PropertyDetailPage({
                     {property.furnishing && (
                       <DetailRow icon={BadgeCheck} label="Furnishing" value={FURNISHING_LABELS[property.furnishing]} />
                     )}
-                    {property.leaseTerm && (
-                      <DetailRow icon={Calendar} label="Lease Term" value={LEASE_LABELS[property.leaseTerm]} />
+
+                    {property.billingCycle && (
+                      <DetailRow
+                        icon={CalendarClock}
+                        label="Billing Period"
+                        value={BILLING_LABELS[property.billingCycle]}
+                      />
                     )}
+
                     {property.availableFrom && (
                       <DetailRow
                         icon={Calendar}
@@ -381,6 +394,7 @@ export default function PropertyDetailPage({
                         })}
                       />
                     )}
+
                     {property.floor !== null && property.floor !== undefined && (
                       <DetailRow
                         icon={Layers}
@@ -388,6 +402,7 @@ export default function PropertyDetailPage({
                         value={property.floor === 0 ? 'Ground Floor' : `Floor ${property.floor}`}
                       />
                     )}
+
                     <DetailRow
                       icon={Car}
                       label="Parking"
@@ -396,9 +411,12 @@ export default function PropertyDetailPage({
                   </CardContent>
                 </Card>
 
+                {/* Contact card (replaces Landlord) */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-base">Landlord</CardTitle>
+                    <CardTitle className="text-base">
+                      {property.contact.role === 'OWNER' ? 'Property Owner' : 'Agent / Broker'}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex items-center gap-3">
@@ -406,19 +424,19 @@ export default function PropertyDetailPage({
                         <User className="h-5 w-5 text-gray-500" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold">{property.landlord.name}</p>
-                        <p className="text-xs text-gray-500">{property.landlord.phone}</p>
+                        <p className="text-sm font-semibold">{property.contact.name}</p>
+                        <p className="text-xs text-gray-500">{property.contact.phone}</p>
                       </div>
                     </div>
-                    {property.landlord.email && (
-                      <p className="text-sm text-gray-600">{property.landlord.email}</p>
+                    {property.contact.email && (
+                      <p className="text-sm text-gray-600">{property.contact.email}</p>
                     )}
-                    {property.landlord.whatsapp && (
-                      <p className="text-sm text-gray-600">WhatsApp: {property.landlord.whatsapp}</p>
+                    {property.contact.whatsapp && (
+                      <p className="text-sm text-gray-600">WhatsApp: {property.contact.whatsapp}</p>
                     )}
-                    <Link href={`/landlords/${property.landlord.id}`}>
+                    <Link href={`/contacts/${property.contact.id}`}>
                       <Button variant="outline" size="sm" className="w-full mt-2">
-                        View Landlord Profile
+                        View Contact Profile
                       </Button>
                     </Link>
                   </CardContent>
@@ -427,7 +445,6 @@ export default function PropertyDetailPage({
             </div>
           </TabsContent>
 
-          {/* Hostel Rooms Tab */}
           {isHostel && (
             <TabsContent value="rooms">
               <HostelRoomsPanel propertyId={id} />

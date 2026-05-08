@@ -48,14 +48,15 @@ const ACTION_VARIANTS: Record<AuditAction, 'default' | 'secondary' | 'destructiv
 };
 
 const ENTITY_LABELS: Record<AuditEntity, string> = {
-  PROPERTY: 'Property',
-  LANDLORD: 'Landlord',
-  USER: 'User',
-  IMAGE: 'Image',
-  AUTH: 'Auth',
+  PROPERTY:    'Property',
+  CONTACT:     'Contact',
+  USER:        'User',
+  IMAGE:       'Image',
+  AUTH:        'Auth',
   HOSTEL_ROOM: 'Hostel Room',
-  BOOKING: 'Booking',
-  DISTRICT: 'District',
+  BOOKING:     'Booking',
+  DISTRICT:    'District',
+  COMPLAINT:   'Complaint',
 };
 
 const UNSET = '__ALL__';

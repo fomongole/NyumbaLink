@@ -1,14 +1,8 @@
 // src/lib/property-field-rules.ts
 // Mirror of backend: src/modules/properties/utils/property-field-rules.ts
-// Keep in sync with backend when adding/removing property types.
+// Keep in sync when adding/removing property types or billing cycles.
 
-export type PropertyType =
-  | 'SINGLE_ROOM'
-  | 'DOUBLE_ROOM'
-  | 'APARTMENT'
-  | 'HOUSE'
-  | 'STUDIO'
-  | 'HOSTEL';
+import { BillingCycle, PropertyType } from '@/types';
 
 export interface PropertyFieldConfig {
   showBedrooms: boolean;
@@ -16,71 +10,114 @@ export interface PropertyFieldConfig {
   showParking: boolean;
   showFloor: boolean;
   showFurnishing: boolean;
-  showLeaseTerm: boolean;
+  showBillingCycle: boolean;
+  allowedBillingCycles: BillingCycle[];
   showSecurityDeposit: boolean;
+  /** Only true for RESIDENTIAL_HOUSE — admin picks SINGLE or DOUBLE subtype */
+  showResidentialSubtype: boolean;
+  /** Sub-units managed via the HostelRooms module */
   isHostel: boolean;
+  /** Supports DAILY billing (Hotel/Lodge and AirBnB) */
+  isHotelLodge: boolean;
 }
 
 export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = {
-  SINGLE_ROOM: {
-    showBedrooms: false,
-    showBathrooms: false,
-    showParking: false,
-    showFloor: true,
-    showFurnishing: true,
-    showLeaseTerm: true,
-    showSecurityDeposit: true,
-    isHostel: false,
-  },
-  DOUBLE_ROOM: {
-    showBedrooms: false,
-    showBathrooms: false,
-    showParking: false,
-    showFloor: true,
-    showFurnishing: true,
-    showLeaseTerm: true,
-    showSecurityDeposit: true,
-    isHostel: false,
-  },
-  STUDIO: {
-    showBedrooms: false,
+  RESIDENTIAL_HOUSE: {
+    showBedrooms: false,        // implied by residentialSubtype (SINGLE/DOUBLE)
     showBathrooms: true,
     showParking: true,
-    showFloor: true,
+    showFloor: false,           // houses are ground-level
     showFurnishing: true,
-    showLeaseTerm: true,
+    showBillingCycle: true,
+    allowedBillingCycles: ['MONTHLY', 'QUARTERLY', 'BIANNUAL', 'ANNUAL'],
     showSecurityDeposit: true,
+    showResidentialSubtype: true,
     isHostel: false,
+    isHotelLodge: false,
   },
+
   APARTMENT: {
     showBedrooms: true,
     showBathrooms: true,
     showParking: true,
     showFloor: true,
     showFurnishing: true,
-    showLeaseTerm: true,
+    showBillingCycle: true,
+    allowedBillingCycles: ['MONTHLY', 'QUARTERLY', 'BIANNUAL', 'ANNUAL'],
     showSecurityDeposit: true,
+    showResidentialSubtype: false,
     isHostel: false,
+    isHotelLodge: false,
   },
-  HOUSE: {
+
+  AIRBNB: {
     showBedrooms: true,
     showBathrooms: true,
     showParking: true,
-    showFloor: false,
+    showFloor: true,
     showFurnishing: true,
-    showLeaseTerm: true,
+    showBillingCycle: true,
+    allowedBillingCycles: ['DAILY', 'MONTHLY', 'QUARTERLY', 'BIANNUAL', 'ANNUAL'],
     showSecurityDeposit: true,
+    showResidentialSubtype: false,
     isHostel: false,
+    isHotelLodge: false,
   },
+
+  OFFICE_SPACE: {
+    showBedrooms: false,
+    showBathrooms: false,
+    showParking: true,
+    showFloor: true,
+    showFurnishing: true,
+    showBillingCycle: true,
+    allowedBillingCycles: ['MONTHLY', 'QUARTERLY', 'BIANNUAL', 'ANNUAL'],
+    showSecurityDeposit: true,
+    showResidentialSubtype: false,
+    isHostel: false,
+    isHotelLodge: false,
+  },
+
+  BUSINESS_SPACE: {
+    showBedrooms: false,
+    showBathrooms: false,
+    showParking: true,
+    showFloor: true,
+    showFurnishing: false,
+    showBillingCycle: true,
+    allowedBillingCycles: ['MONTHLY', 'QUARTERLY', 'BIANNUAL', 'ANNUAL'],
+    showSecurityDeposit: true,
+    showResidentialSubtype: false,
+    isHostel: false,
+    isHotelLodge: false,
+  },
+
   HOSTEL: {
     showBedrooms: false,
     showBathrooms: false,
     showParking: true,
     showFloor: false,
     showFurnishing: false,
-    showLeaseTerm: false,
+    showBillingCycle: false,    // billing cycle lives on each HostelRoom
+    allowedBillingCycles: [],
     showSecurityDeposit: false,
+    showResidentialSubtype: false,
     isHostel: true,
+    isHotelLodge: false,
+  },
+
+  HOTEL_LODGE: {
+    showBedrooms: true,
+    showBathrooms: true,
+    showParking: true,
+    showFloor: false,
+    showFurnishing: true,
+    showBillingCycle: true,
+    allowedBillingCycles: ['DAILY', 'MONTHLY'],
+    showSecurityDeposit: false,
+    showResidentialSubtype: false,
+    isHostel: false,
+    isHotelLodge: true,
   },
 };
 

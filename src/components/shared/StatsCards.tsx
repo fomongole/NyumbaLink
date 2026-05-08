@@ -2,20 +2,14 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-  Building2,
-  CheckCircle,
-  XCircle,
-  Users,
-  TrendingUp,
-  Eye,
-  MessageCircle,
-  Percent,
+  Building2, CheckCircle, XCircle, ContactRound,
+  Percent, Eye, MessageCircle,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { propertiesApi } from '@/lib/api/properties.api';
-import { landlordsApi } from '@/lib/api/landlords.api';
+import { contactsApi } from '@/lib/api/contacts.api';
 
 export default function StatsCards() {
   const { data: stats, isLoading: loadingStats } = useQuery({
@@ -23,11 +17,9 @@ export default function StatsCards() {
     queryFn: propertiesApi.getStats,
   });
 
-  // ── Wrap in arrow function so React Query's context object is not passed
-  //    as the params argument. Extract .data.length for the count.
-  const { data: landlordsResponse, isLoading: loadingLandlords } = useQuery({
-    queryKey: ['landlords'],
-    queryFn: () => landlordsApi.getAll(),
+  const { data: contactsResponse, isLoading: loadingContacts } = useQuery({
+    queryKey: ['contacts'],
+    queryFn: () => contactsApi.getAll(),
   });
 
   const primaryStats = [
@@ -61,19 +53,18 @@ export default function StatsCards() {
       badge: null,
     },
     {
-      title: 'Landlords',
-      value: landlordsResponse?.data?.length ?? 0,  // ← .data.length, not .length
-      icon: Users,
+      title: 'Contacts',
+      value: contactsResponse?.meta?.total ?? 0,
+      icon: ContactRound,
       color: 'text-purple-600',
       bg: 'bg-purple-50',
-      loading: loadingLandlords,
+      loading: loadingContacts,
       badge: null,
     },
   ];
 
   return (
     <div className="space-y-4">
-      {/* Primary stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {primaryStats.map((stat) => {
           const Icon = stat.icon;
@@ -106,9 +97,7 @@ export default function StatsCards() {
         })}
       </div>
 
-      {/* Secondary stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Occupancy Rate */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Occupancy Rate</CardTitle>
@@ -133,7 +122,6 @@ export default function StatsCards() {
           </CardContent>
         </Card>
 
-        {/* Top Viewed */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Top Viewed Property</CardTitle>
@@ -160,7 +148,6 @@ export default function StatsCards() {
           </CardContent>
         </Card>
 
-        {/* Most Enquired */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Most Enquired</CardTitle>

@@ -8,9 +8,10 @@ import { useRouter } from 'next/navigation';
 import {
   ArrowLeft, Phone, MessageCircle, Mail,
   MapPin, CreditCard, Building2, Pencil,
-  Trash2, Eye, ToggleLeft, ToggleRight,
+  Trash2, Eye,
 } from 'lucide-react';
 import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,20 +21,28 @@ import {
   TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import Header from '@/components/layout/Header';
-import LandlordFormSheet from '@/components/landlords/LandlordFormSheet';
+import ContactFormSheet from '@/components/contacts/ContactFormSheet';
 import DeleteDialog from '@/components/shared/DeleteDialog';
-import { landlordsApi } from '@/lib/api/landlords.api';
+import { contactsApi } from '@/lib/api/contacts.api';
 import { propertiesApi } from '@/lib/api/properties.api';
+import { ContactRole } from '@/types';
 
 const TYPE_LABELS: Record<string, string> = {
-  SINGLE_ROOM: 'Single Room',
-  DOUBLE_ROOM: 'Double Room',
-  APARTMENT: 'Apartment',
-  HOUSE: 'House',
-  STUDIO: 'Studio',
+  RESIDENTIAL_HOUSE: 'Residential House',
+  APARTMENT:         'Apartment',
+  AIRBNB:            'AirBnB',
+  OFFICE_SPACE:      'Office Space',
+  BUSINESS_SPACE:    'Business Space',
+  HOSTEL:            'Hostel',
+  HOTEL_LODGE:       'Hotel / Lodge',
 };
 
-export default function LandlordDetailPage({
+const ROLE_BADGE_CLASS: Record<ContactRole, string> = {
+  OWNER: 'bg-blue-50 text-blue-700 border-blue-200',
+  AGENT: 'bg-violet-50 text-violet-700 border-violet-200',
+};
+
+export default function ContactDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -44,35 +53,34 @@ export default function LandlordDetailPage({
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  const { data: landlord, isLoading } = useQuery({
-    queryKey: ['landlords', id],
-    queryFn: () => landlordsApi.getOne(id),
+  const { data: contact, isLoading } = useQuery({
+    queryKey: ['contacts', id],
+    queryFn: () => contactsApi.getOne(id),
   });
 
-  // Get all properties and filter by this landlord client-side
-  // (backend currently doesn't have a filter by landlordId, this is fine for MVP)
   const { data: propertiesData } = useQuery({
     queryKey: ['properties', { limit: 200 }],
     queryFn: () => propertiesApi.getAll({ limit: 200 }),
   });
 
-  const landlordProperties =
-    propertiesData?.data.filter((p) => p.landlord.id === id) ?? [];
+  // Filter properties managed by this contact
+  const contactProperties =
+    propertiesData?.data.filter((p) => p.contact.id === id) ?? [];
 
   const deleteMutation = useMutation({
-    mutationFn: () => landlordsApi.delete(id),
+    mutationFn: () => contactsApi.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['landlords'] });
-      toast.success('Landlord deactivated');
-      router.push('/landlords');
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      toast.success('Contact deactivated');
+      router.push('/contacts');
     },
-    onError: () => toast.error('Failed to deactivate landlord.'),
+    onError: () => toast.error('Failed to deactivate contact.'),
   });
 
   if (isLoading) {
     return (
       <>
-        <Header title="Landlord Profile" />
+        <Header title="Contact Profile" />
         <main className="flex-1 p-6 space-y-4">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-48 w-full" />
@@ -81,51 +89,46 @@ export default function LandlordDetailPage({
     );
   }
 
-  if (!landlord) {
+  if (!contact) {
     return (
       <>
-        <Header title="Landlord Not Found" />
+        <Header title="Contact Not Found" />
         <main className="flex-1 p-6">
-          <p className="text-gray-500">This landlord does not exist.</p>
-          <Link href="/landlords">
-            <Button className="mt-4">Back to Landlords</Button>
+          <p className="text-gray-500">This contact does not exist.</p>
+          <Link href="/contacts">
+            <Button className="mt-4">Back to Contacts</Button>
           </Link>
         </main>
       </>
     );
   }
 
-  const available = landlordProperties.filter((p) => p.status === 'AVAILABLE').length;
-  const rented = landlordProperties.filter((p) => p.status === 'RENTED').length;
+  const available = contactProperties.filter((p) => p.status === 'AVAILABLE').length;
+  const rented = contactProperties.filter((p) => p.status === 'RENTED').length;
 
   return (
     <>
       <Header
-        title={landlord.name}
-        description={`Landlord profile · ${landlordProperties.length} propert${landlordProperties.length !== 1 ? 'ies' : 'y'}`}
+        title={contact.name}
+        description={`${contact.role === 'OWNER' ? 'Property Owner' : 'Agent / Broker'} · ${contactProperties.length} propert${contactProperties.length !== 1 ? 'ies' : 'y'}`}
       />
 
       <main className="flex-1 p-6 space-y-6">
         {/* Back + Actions */}
         <div className="flex items-center justify-between">
           <Link
-            href="/landlords"
+            href="/contacts"
             className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Landlords
+            Back to Contacts
           </Link>
-
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
               <Pencil className="h-4 w-4 mr-1.5" />
               Edit
             </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setDeleteOpen(true)}
-            >
+            <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="h-4 w-4 mr-1.5" />
               Deactivate
             </Button>
@@ -137,25 +140,32 @@ export default function LandlordDetailPage({
           <div className="space-y-4">
             <Card>
               <CardContent className="pt-6 space-y-4">
-                {/* Avatar */}
+                {/* Avatar + name */}
                 <div className="flex flex-col items-center gap-3 pb-4 border-b">
                   <div className="h-20 w-20 rounded-full bg-gray-100 flex items-center justify-center">
                     <span className="text-3xl font-bold text-gray-400">
-                      {landlord.name.charAt(0).toUpperCase()}
+                      {contact.name.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <div className="text-center">
-                    <p className="font-semibold text-lg">{landlord.name}</p>
-                    <Badge variant={landlord.isActive ? 'default' : 'secondary'}>
-                      {landlord.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
+                  <div className="text-center space-y-1.5">
+                    <p className="font-semibold text-lg">{contact.name}</p>
+                    <span
+                      className={`inline-flex items-center text-xs font-medium px-2.5 py-0.5 rounded-full border ${ROLE_BADGE_CLASS[contact.role]}`}
+                    >
+                      {contact.role === 'OWNER' ? 'Property Owner' : 'Agent / Broker'}
+                    </span>
+                    <div className="pt-1">
+                      <Badge variant={contact.isActive ? 'default' : 'secondary'}>
+                        {contact.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
 
                 {/* Quick stats */}
                 <div className="grid grid-cols-3 gap-3 pb-4 border-b">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-gray-900">{landlordProperties.length}</p>
+                    <p className="text-2xl font-bold text-gray-900">{contactProperties.length}</p>
                     <p className="text-xs text-gray-500">Total</p>
                   </div>
                   <div className="text-center">
@@ -170,33 +180,33 @@ export default function LandlordDetailPage({
 
                 {/* Contact info */}
                 <div className="space-y-3">
-                  <ContactRow icon={Phone} value={landlord.phone} />
-                  {landlord.whatsapp && (
+                  <ContactRow icon={Phone} value={contact.phone} />
+                  {contact.whatsapp && (
                     <ContactRow
                       icon={MessageCircle}
-                      value={landlord.whatsapp}
+                      value={contact.whatsapp}
                       iconClass="text-green-600"
                     />
                   )}
-                  {landlord.email && (
-                    <ContactRow icon={Mail} value={landlord.email} />
+                  {contact.email && (
+                    <ContactRow icon={Mail} value={contact.email} />
                   )}
-                  {landlord.physicalAddress && (
-                    <ContactRow icon={MapPin} value={landlord.physicalAddress} />
+                  {contact.physicalAddress && (
+                    <ContactRow icon={MapPin} value={contact.physicalAddress} />
                   )}
-                  {landlord.nationalId && (
+                  {contact.nationalId && (
                     <ContactRow
                       icon={CreditCard}
-                      value={landlord.nationalId}
+                      value={contact.nationalId}
                       label="NIN"
                     />
                   )}
                 </div>
 
-                {landlord.notes && (
+                {contact.notes && (
                   <div className="pt-3 border-t">
                     <p className="text-xs font-medium text-gray-500 mb-1">Notes</p>
-                    <p className="text-sm text-gray-700">{landlord.notes}</p>
+                    <p className="text-sm text-gray-700">{contact.notes}</p>
                   </div>
                 )}
               </CardContent>
@@ -208,17 +218,14 @@ export default function LandlordDetailPage({
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-base">
-                  Properties ({landlordProperties.length})
+                  Properties ({contactProperties.length})
                 </CardTitle>
-                <Link href={`/properties?landlord=${id}`}>
-                  <Button variant="outline" size="sm">View All</Button>
-                </Link>
               </CardHeader>
               <CardContent>
-                {landlordProperties.length === 0 ? (
+                {contactProperties.length === 0 ? (
                   <div className="text-center py-10 text-gray-400">
                     <Building2 className="h-8 w-8 mx-auto mb-2" />
-                    <p className="text-sm">No properties for this landlord yet</p>
+                    <p className="text-sm">No properties for this contact yet</p>
                   </div>
                 ) : (
                   <Table>
@@ -226,13 +233,13 @@ export default function LandlordDetailPage({
                       <TableRow>
                         <TableHead>Property</TableHead>
                         <TableHead>Type</TableHead>
-                        <TableHead>Price/mo</TableHead>
+                        <TableHead>Price</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {landlordProperties.map((property) => {
+                      {contactProperties.map((property) => {
                         const primary =
                           property.images.find((i) => i.isPrimary) ?? property.images[0];
                         return (
@@ -255,16 +262,14 @@ export default function LandlordDetailPage({
                                   )}
                                 </div>
                                 <div>
-                                  <p className="text-sm font-medium leading-tight">
-                                    {property.title}
-                                  </p>
+                                  <p className="text-sm font-medium leading-tight">{property.title}</p>
                                   <p className="text-xs text-gray-500">{property.area}</p>
                                 </div>
                               </div>
                             </TableCell>
                             <TableCell>
                               <Badge variant="outline" className="text-xs">
-                                {TYPE_LABELS[property.type]}
+                                {TYPE_LABELS[property.type] ?? property.type}
                               </Badge>
                             </TableCell>
                             <TableCell className="text-sm font-medium">
@@ -272,9 +277,7 @@ export default function LandlordDetailPage({
                             </TableCell>
                             <TableCell>
                               <Badge
-                                variant={
-                                  property.status === 'AVAILABLE' ? 'default' : 'secondary'
-                                }
+                                variant={property.status === 'AVAILABLE' ? 'default' : 'secondary'}
                                 className="text-xs"
                               >
                                 {property.status === 'AVAILABLE' ? 'Available' : 'Rented'}
@@ -299,10 +302,10 @@ export default function LandlordDetailPage({
         </div>
       </main>
 
-      <LandlordFormSheet
+      <ContactFormSheet
         open={editOpen}
         onClose={() => setEditOpen(false)}
-        landlord={landlord}
+        contact={contact}
       />
 
       <DeleteDialog
@@ -310,8 +313,8 @@ export default function LandlordDetailPage({
         onClose={() => setDeleteOpen(false)}
         onConfirm={() => deleteMutation.mutate()}
         isLoading={deleteMutation.isPending}
-        title="Deactivate Landlord"
-        description={`Are you sure you want to deactivate ${landlord.name}?`}
+        title="Deactivate Contact"
+        description={`Are you sure you want to deactivate ${contact.name}?`}
       />
     </>
   );

@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { districtsApi } from '@/lib/api/districts.api';
-import { PropertyFilters, PropertyType, PropertyStatus } from '@/types';
+import { PropertyFilters, PropertyType, PropertyStatus, BillingCycle } from '@/types';
 
 interface Props {
   filters: PropertyFilters & { search?: string };
@@ -21,20 +21,30 @@ interface Props {
 }
 
 const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
-  { value: 'SINGLE_ROOM', label: 'Single Room' },
-  { value: 'DOUBLE_ROOM', label: 'Double Room' },
-  { value: 'APARTMENT', label: 'Apartment' },
-  { value: 'HOUSE', label: 'House' },
-  { value: 'STUDIO', label: 'Studio' },
+  { value: 'RESIDENTIAL_HOUSE', label: 'Residential House' },
+  { value: 'APARTMENT',         label: 'Apartment' },
+  { value: 'AIRBNB',            label: 'AirBnB' },
+  { value: 'OFFICE_SPACE',      label: 'Office Space' },
+  { value: 'BUSINESS_SPACE',    label: 'Business Space' },
+  { value: 'HOSTEL',            label: 'Hostel' },
+  { value: 'HOTEL_LODGE',       label: 'Hotel / Lodge' },
 ];
 
 const STATUSES: { value: PropertyStatus; label: string }[] = [
   { value: 'AVAILABLE', label: 'Available' },
-  { value: 'RENTED', label: 'Rented Out' },
+  { value: 'RENTED',    label: 'Rented Out' },
+];
+
+const BILLING_CYCLES: { value: BillingCycle; label: string }[] = [
+  { value: 'DAILY',       label: 'Daily' },
+  { value: 'MONTHLY',     label: 'Monthly' },
+  { value: 'QUARTERLY',   label: 'Quarterly' },
+  { value: 'FOUR_MONTHS', label: '4 Months' },
+  { value: 'BIANNUAL',    label: 'Biannual' },
+  { value: 'ANNUAL',      label: 'Annual' },
 ];
 
 const BEDROOMS = [1, 2, 3, 4, 5];
-
 const UNSET = '__ALL__';
 
 export default function PropertyFilterBar({ filters, onChange, onReset }: Props) {
@@ -48,6 +58,7 @@ export default function PropertyFilterBar({ filters, onChange, onReset }: Props)
     filters.districtId ||
     filters.type ||
     filters.status ||
+    filters.billingCycle ||
     filters.minPrice ||
     filters.maxPrice ||
     filters.bedrooms;
@@ -78,9 +89,7 @@ export default function PropertyFilterBar({ filters, onChange, onReset }: Props)
         <SelectContent>
           <SelectItem value={UNSET}>All Districts</SelectItem>
           {districts.map((d) => (
-            <SelectItem key={d.id} value={d.id}>
-              {d.name}
-            </SelectItem>
+            <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -92,15 +101,13 @@ export default function PropertyFilterBar({ filters, onChange, onReset }: Props)
           onChange({ ...filters, type: v === UNSET ? undefined : (v as PropertyType) })
         }
       >
-        <SelectTrigger className="h-9 w-36 text-sm">
+        <SelectTrigger className="h-9 w-44 text-sm">
           <SelectValue placeholder="Type" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value={UNSET}>All Types</SelectItem>
           {PROPERTY_TYPES.map((t) => (
-            <SelectItem key={t.value} value={t.value}>
-              {t.label}
-            </SelectItem>
+            <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -118,9 +125,25 @@ export default function PropertyFilterBar({ filters, onChange, onReset }: Props)
         <SelectContent>
           <SelectItem value={UNSET}>All Statuses</SelectItem>
           {STATUSES.map((s) => (
-            <SelectItem key={s.value} value={s.value}>
-              {s.label}
-            </SelectItem>
+            <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {/* Billing Cycle */}
+      <Select
+        value={filters.billingCycle ?? UNSET}
+        onValueChange={(v) =>
+          onChange({ ...filters, billingCycle: v === UNSET ? undefined : (v as BillingCycle) })
+        }
+      >
+        <SelectTrigger className="h-9 w-36 text-sm">
+          <SelectValue placeholder="Billing" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={UNSET}>Any Billing</SelectItem>
+          {BILLING_CYCLES.map((b) => (
+            <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
           ))}
         </SelectContent>
       </Select>

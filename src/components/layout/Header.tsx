@@ -5,7 +5,11 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
-import { Menu, LayoutDashboard, Building2, Users, ShieldCheck, ScrollText, Settings, LogOut } from 'lucide-react';
+import {
+  Menu, LayoutDashboard, Building2, ShieldCheck,
+  ScrollText, Settings, LogOut, CalendarCheck,
+  MessageSquareWarning, ContactRound,
+} from 'lucide-react';
 
 import { User } from '@/types';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -16,11 +20,13 @@ import { Logo } from '@/components/shared/Logo';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { label: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { label: 'Properties', href: '/properties', icon: Building2 },
-  { label: 'Landlords', href: '/landlords', icon: Users },
-  { label: 'Users', href: '/users', icon: ShieldCheck },
-  { label: 'Audit Logs', href: '/audit-logs', icon: ScrollText },
+  { label: 'Dashboard',   href: '/',           icon: LayoutDashboard },
+  { label: 'Properties',  href: '/properties', icon: Building2 },
+  { label: 'Contacts',    href: '/contacts',   icon: ContactRound },
+  { label: 'Bookings',    href: '/bookings',   icon: CalendarCheck },
+  { label: 'Complaints',  href: '/complaints', icon: MessageSquareWarning },
+  { label: 'Users',       href: '/users',      icon: ShieldCheck },
+  { label: 'Audit Logs',  href: '/audit-logs', icon: ScrollText },
 ];
 
 interface HeaderProps {
@@ -55,7 +61,6 @@ export default function Header({ title, description }: HeaderProps) {
   return (
     <header className="h-16 border-b bg-white flex items-center justify-between px-4 sm:px-6 shrink-0">
       <div className="flex items-center gap-3">
-        {/* Mobile Hamburger Menu */}
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" className="md:hidden -ml-2 shrink-0">
@@ -89,7 +94,7 @@ export default function Header({ title, description }: HeaderProps) {
                         'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                         isActive
                           ? 'bg-primary text-primary-foreground'
-                          : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                          : 'text-gray-400 hover:bg-gray-800 hover:text-white',
                       )}
                     >
                       <Icon className="h-4 w-4" />
@@ -106,7 +111,7 @@ export default function Header({ title, description }: HeaderProps) {
                     'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                     pathname === '/settings'
                       ? 'bg-primary text-primary-foreground'
-                      : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                      : 'text-gray-400 hover:bg-gray-800 hover:text-white',
                   )}
                 >
                   <Settings className="h-4 w-4" />

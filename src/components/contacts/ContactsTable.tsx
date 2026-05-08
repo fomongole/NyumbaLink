@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import {
   Plus, Pencil, Trash2, Phone,
-  MessageCircle, Eye, Search, Download,
+  MessageCircle, Eye, Search, Download, Filter,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -22,35 +22,47 @@ import {
   TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
+  Select, SelectContent, SelectItem,
+  SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
-import LandlordFormSheet from './LandlordFormSheet';
+import ContactFormSheet from './ContactFormSheet';
 import DeleteDialog from '@/components/shared/DeleteDialog';
-import { landlordsApi } from '@/lib/api/landlords.api';
-import { Landlord } from '@/types';
+import { contactsApi } from '@/lib/api/contacts.api';
+import { Contact, ContactRole } from '@/types';
 
-function exportToCsv(landlords: Landlord[]) {
-  const headers = ['Name', 'Phone', 'WhatsApp', 'Email', 'National ID', 'Address', 'Notes', 'Status'];
-  const rows = landlords.map((l) => [
-    l.name, l.phone, l.whatsapp ?? '',
-    l.email ?? '', l.nationalId ?? '',
-    l.physicalAddress ?? '', l.notes ?? '',
-    l.isActive ? 'Active' : 'Inactive',
+const ROLE_LABELS: Record<ContactRole, string> = {
+  OWNER: 'Owner',
+  AGENT: 'Agent',
+};
+
+const ROLE_BADGE_CLASS: Record<ContactRole, string> = {
+  OWNER: 'bg-blue-50 text-blue-700 border-blue-200',
+  AGENT: 'bg-violet-50 text-violet-700 border-violet-200',
+};
+
+function exportToCsv(contacts: Contact[]) {
+  const headers = ['Name', 'Role', 'Phone', 'WhatsApp', 'Email', 'National ID', 'Address', 'Notes', 'Status'];
+  const rows = contacts.map((c) => [
+    c.name, c.role, c.phone, c.whatsapp ?? '',
+    c.email ?? '', c.nationalId ?? '',
+    c.physicalAddress ?? '', c.notes ?? '',
+    c.isActive ? 'Active' : 'Inactive',
   ]);
-
   const csv = [headers, ...rows]
     .map((r) => r.map((v) => `"${v}"`).join(','))
     .join('\n');
-
   const blob = new Blob([csv], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `nyumbalink-landlords-${new Date().toISOString().split('T')[0]}.csv`;
+  a.download = `nyumbalink-contacts-${new Date().toISOString().split('T')[0]}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -64,53 +76,57 @@ function ActionTooltip({ label, children }: { label: string; children: React.Rea
   );
 }
 
-export default function LandlordsTable() {
+const UNSET = '__ALL__';
+
+export default function ContactsTable() {
   const queryClient = useQueryClient();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [selected, setSelected] = useState<Landlord | null>(null);
+  const [selected, setSelected] = useState<Contact | null>(null);
   const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState<ContactRole | undefined>(undefined);
 
-  const { data: landlordsResponse, isLoading } = useQuery({
-    queryKey: ['landlords'],
-    queryFn: () => landlordsApi.getAll(),
+  const { data: contactsResponse, isLoading } = useQuery({
+    queryKey: ['contacts', { role: roleFilter }],
+    queryFn: () => contactsApi.getAll({ role: roleFilter, limit: 200 }),
   });
 
-  const landlords = landlordsResponse?.data ?? [];
+  const contacts = contactsResponse?.data ?? [];
+  const total = contactsResponse?.meta?.total ?? 0;
 
   const filtered = search
-    ? landlords.filter(
-        (l) =>
-          l.name.toLowerCase().includes(search.toLowerCase()) ||
-          l.phone.includes(search) ||
-          l.email?.toLowerCase().includes(search.toLowerCase()),
+    ? contacts.filter(
+        (c) =>
+          c.name.toLowerCase().includes(search.toLowerCase()) ||
+          c.phone.includes(search) ||
+          c.email?.toLowerCase().includes(search.toLowerCase()),
       )
-    : landlords;
+    : contacts;
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => landlordsApi.delete(id),
+    mutationFn: (id: string) => contactsApi.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['landlords'] });
-      toast.success('Landlord deactivated');
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      toast.success('Contact deactivated');
       setDeleteOpen(false);
       setSelected(null);
     },
-    onError: () => toast.error('Failed to deactivate landlord.'),
+    onError: () => toast.error('Failed to deactivate contact.'),
   });
 
-  const handleEdit = (l: Landlord) => { setSelected(l); setSheetOpen(true); };
-  const handleDelete = (l: Landlord) => { setSelected(l); setDeleteOpen(true); };
+  const handleEdit = (c: Contact) => { setSelected(c); setSheetOpen(true); };
+  const handleDelete = (c: Contact) => { setSelected(c); setDeleteOpen(true); };
 
   return (
     <TooltipProvider delayDuration={300}>
       <Card>
         <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <CardTitle>All Landlords</CardTitle>
+            <CardTitle>All Contacts</CardTitle>
             <CardDescription>
-              {filtered.length} landlord{filtered.length !== 1 ? 's' : ''}
-              {search && landlords.length !== filtered.length
-                ? ` (filtered from ${landlords.length})`
+              {filtered.length} contact{filtered.length !== 1 ? 's' : ''}
+              {(search || roleFilter) && total !== filtered.length
+                ? ` (filtered from ${total})`
                 : ''}
             </CardDescription>
           </div>
@@ -130,20 +146,47 @@ export default function LandlordsTable() {
               className="flex-1 sm:flex-none"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Landlord
+              Add Contact
             </Button>
           </div>
         </CardHeader>
 
         <CardContent className="space-y-4">
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-            <Input
-              placeholder="Search name, phone, email..."
-              className="pl-8 h-9 text-sm w-full"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+          {/* Search + Role filter */}
+          <div className="flex flex-wrap gap-2">
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+              <Input
+                placeholder="Search name, phone, email..."
+                className="pl-8 h-9 text-sm w-full"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+            <Select
+              value={roleFilter ?? UNSET}
+              onValueChange={(v) => setRoleFilter(v === UNSET ? undefined : v as ContactRole)}
+            >
+              <SelectTrigger className="h-9 w-36 text-sm">
+                <SelectValue placeholder="All Roles" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={UNSET}>All Roles</SelectItem>
+                <SelectItem value="OWNER">Owners</SelectItem>
+                <SelectItem value="AGENT">Agents</SelectItem>
+              </SelectContent>
+            </Select>
+            {(search || roleFilter) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9"
+                onClick={() => { setSearch(''); setRoleFilter(undefined); }}
+              >
+                <Filter className="h-3.5 w-3.5 mr-1.5" />
+                Clear
+              </Button>
+            )}
           </div>
 
           {isLoading ? (
@@ -155,10 +198,12 @@ export default function LandlordsTable() {
           ) : filtered.length === 0 ? (
             <div className="text-center py-16 text-gray-500">
               <p className="text-lg font-medium">
-                {search ? 'No landlords match your search' : 'No landlords yet'}
+                {search || roleFilter ? 'No contacts match your filters' : 'No contacts yet'}
               </p>
               <p className="text-sm mt-1">
-                {search ? 'Try a different search term.' : 'Add your first landlord to get started.'}
+                {search || roleFilter
+                  ? 'Try a different search or role filter.'
+                  : 'Add your first contact (owner or agent) to get started.'}
               </p>
             </div>
           ) : (
@@ -167,6 +212,7 @@ export default function LandlordsTable() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
+                    <TableHead>Role</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>WhatsApp</TableHead>
@@ -176,61 +222,66 @@ export default function LandlordsTable() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((landlord) => (
-                    <TableRow key={landlord.id}>
-                      <TableCell className="font-medium">{landlord.name}</TableCell>
+                  {filtered.map((contact) => (
+                    <TableRow key={contact.id}>
+                      <TableCell className="font-medium">{contact.name}</TableCell>
+                      <TableCell>
+                        <span
+                          className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full border ${ROLE_BADGE_CLASS[contact.role]}`}
+                        >
+                          {ROLE_LABELS[contact.role]}
+                        </span>
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1.5 text-sm text-gray-600">
                           <Phone className="h-3.5 w-3.5" />
-                          {landlord.phone}
+                          {contact.phone}
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">
-                        {landlord.email ?? <span className="text-gray-400">—</span>}
+                        {contact.email ?? <span className="text-gray-400">—</span>}
                       </TableCell>
                       <TableCell>
-                        {landlord.whatsapp ? (
+                        {contact.whatsapp ? (
                           <div className="flex items-center gap-1.5 text-sm text-gray-600">
                             <MessageCircle className="h-3.5 w-3.5 text-green-600" />
-                            {landlord.whatsapp}
+                            {contact.whatsapp}
                           </div>
                         ) : (
                           <span className="text-gray-400 text-sm">—</span>
                         )}
                       </TableCell>
                       <TableCell className="text-sm text-gray-600 font-mono">
-                        {landlord.nationalId ?? <span className="text-gray-400 font-sans">—</span>}
+                        {contact.nationalId ?? <span className="text-gray-400 font-sans">—</span>}
                       </TableCell>
                       <TableCell>
-                        <Badge variant={landlord.isActive ? 'default' : 'secondary'}>
-                          {landlord.isActive ? 'Active' : 'Inactive'}
+                        <Badge variant={contact.isActive ? 'default' : 'secondary'}>
+                          {contact.isActive ? 'Active' : 'Inactive'}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <ActionTooltip label="View profile">
-                            <Link href={`/landlords/${landlord.id}`}>
+                            <Link href={`/contacts/${contact.id}`}>
                               <Button size="sm" variant="outline">
                                 <Eye className="h-3.5 w-3.5" />
                               </Button>
                             </Link>
                           </ActionTooltip>
-
-                          <ActionTooltip label="Edit landlord">
+                          <ActionTooltip label="Edit contact">
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleEdit(landlord)}
+                              onClick={() => handleEdit(contact)}
                             >
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
                           </ActionTooltip>
-
-                          <ActionTooltip label="Deactivate landlord">
+                          <ActionTooltip label="Deactivate contact">
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => handleDelete(landlord)}
+                              onClick={() => handleDelete(contact)}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
@@ -246,10 +297,10 @@ export default function LandlordsTable() {
         </CardContent>
       </Card>
 
-      <LandlordFormSheet
+      <ContactFormSheet
         open={sheetOpen}
         onClose={() => { setSheetOpen(false); setSelected(null); }}
-        landlord={selected}
+        contact={selected}
       />
 
       <DeleteDialog
@@ -257,7 +308,7 @@ export default function LandlordsTable() {
         onClose={() => { setDeleteOpen(false); setSelected(null); }}
         onConfirm={() => selected && deleteMutation.mutate(selected.id)}
         isLoading={deleteMutation.isPending}
-        title="Deactivate Landlord"
+        title="Deactivate Contact"
         description={`Are you sure you want to deactivate ${selected?.name}? They will no longer appear in the system.`}
       />
     </TooltipProvider>

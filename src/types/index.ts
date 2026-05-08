@@ -1,5 +1,3 @@
-// src/types/index.ts — Full updated version
-
 // ─── Auth ────────────────────────────────────────────────────────────────────
 export interface User {
   id: string;
@@ -38,6 +36,7 @@ export interface ChangePasswordPayload {
 }
 
 // ─── District ────────────────────────────────────────────────────────────────
+// ─── District ────────────────────────────────────────────────────────────────
 export interface District {
   id: string;
   name: string;
@@ -52,11 +51,15 @@ export interface CreateDistrictPayload {
 
 export type UpdateDistrictPayload = Partial<CreateDistrictPayload>;
 
-// ─── Landlord ────────────────────────────────────────────────────────────────
-export interface Landlord {
+// ─── Contact (replaces Landlord) ─────────────────────────────────────────────
+/** OWNER = the person who owns the property. AGENT = broker / property manager. */
+export type ContactRole = 'OWNER' | 'AGENT';
+
+export interface Contact {
   id: string;
   name: string;
   phone: string;
+  role: ContactRole;
   email?: string;
   whatsapp?: string;
   nationalId?: string;
@@ -67,9 +70,10 @@ export interface Landlord {
   updatedAt: string;
 }
 
-export interface CreateLandlordPayload {
+export interface CreateContactPayload {
   name: string;
   phone: string;
+  role: ContactRole;
   email?: string;
   whatsapp?: string;
   nationalId?: string;
@@ -77,20 +81,42 @@ export interface CreateLandlordPayload {
   notes?: string;
 }
 
-export type UpdateLandlordPayload = Partial<CreateLandlordPayload>;
+export type UpdateContactPayload = Partial<CreateContactPayload>;
+
+export interface ContactFilters {
+  search?: string;
+  role?: ContactRole;
+  page?: number;
+  limit?: number;
+}
 
 // ─── Property ────────────────────────────────────────────────────────────────
 export type PropertyType =
-  | 'SINGLE_ROOM'
-  | 'DOUBLE_ROOM'
+  | 'RESIDENTIAL_HOUSE'
   | 'APARTMENT'
-  | 'HOUSE'
-  | 'STUDIO'
-  | 'HOSTEL';
+  | 'AIRBNB'
+  | 'OFFICE_SPACE'
+  | 'BUSINESS_SPACE'
+  | 'HOSTEL'
+  | 'HOTEL_LODGE';
+
+/** Only set when type = RESIDENTIAL_HOUSE */
+export type ResidentialSubtype = 'SINGLE' | 'DOUBLE';
 
 export type PropertyStatus = 'AVAILABLE' | 'RENTED';
 export type FurnishingStatus = 'FURNISHED' | 'SEMI_FURNISHED' | 'UNFURNISHED';
-export type LeaseTerm = 'MONTHLY' | 'QUARTERLY' | 'BIANNUAL' | 'ANNUAL';
+
+/**
+ * Replaces the old LeaseTerm.
+ * Not every cycle is valid for every property type — see PROPERTY_FIELD_CONFIG.
+ */
+export type BillingCycle =
+  | 'DAILY'
+  | 'MONTHLY'
+  | 'QUARTERLY'
+  | 'FOUR_MONTHS'
+  | 'BIANNUAL'
+  | 'ANNUAL';
 
 export interface PropertyImage {
   id: string;
@@ -104,7 +130,9 @@ export interface Property {
   title: string;
   description: string;
   type: PropertyType;
+  residentialSubtype?: ResidentialSubtype;
   price: number;
+  billingCycle?: BillingCycle;
   bedrooms: number;
   bathrooms: number;
   area: string;
@@ -113,7 +141,6 @@ export interface Property {
   longitude?: number;
   status: PropertyStatus;
   furnishing?: FurnishingStatus;
-  leaseTerm?: LeaseTerm;
   securityDeposit?: number;
   availableFrom?: string;
   floor?: number;
@@ -121,7 +148,8 @@ export interface Property {
   amenities: string[];
   viewCount: number;
   enquiryCount: number;
-  landlord: Landlord;
+  /** The owner or agent responsible for this property */
+  contact: Contact;
   district: District;
   images: PropertyImage[];
   createdAt: string;
@@ -133,7 +161,9 @@ export interface CreatePropertyPayload {
   title: string;
   description: string;
   type: PropertyType;
+  residentialSubtype?: ResidentialSubtype;
   price: number;
+  billingCycle?: BillingCycle;
   bedrooms?: number;
   bathrooms?: number;
   area: string;
@@ -141,12 +171,11 @@ export interface CreatePropertyPayload {
   latitude?: number;
   longitude?: number;
   furnishing?: FurnishingStatus;
-  leaseTerm?: LeaseTerm;
   securityDeposit?: number;
   availableFrom?: string;
   floor?: number;
   parkingAvailable?: boolean;
-  landlordId: string;
+  contactId: string;
   districtId: string;
   amenities?: string[];
 }
@@ -157,6 +186,7 @@ export interface PropertyFilters {
   districtId?: string;
   type?: PropertyType;
   status?: PropertyStatus;
+  billingCycle?: BillingCycle;
   minPrice?: number;
   maxPrice?: number;
   bedrooms?: number;
@@ -186,6 +216,7 @@ export interface HostelRoom {
   roomNumber: string;
   type: HostelRoomType;
   price: number;
+  billingCycle: BillingCycle;
   status: HostelRoomStatus;
   floor?: number;
   description?: string;
@@ -199,6 +230,7 @@ export interface CreateHostelRoomPayload {
   roomNumber: string;
   type: HostelRoomType;
   price: number;
+  billingCycle: BillingCycle;
   floor?: number;
   description?: string;
   amenities?: string[];
@@ -276,6 +308,56 @@ export interface CancelBookingPayload {
   reason?: string;
 }
 
+// ─── Complaints ───────────────────────────────────────────────────────────────
+export type ComplaintStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+
+export type ComplaintCategory =
+  | 'GENERAL'
+  | 'PROPERTY_CONDITION'
+  | 'CONTACT_CONDUCT'
+  | 'PRICING'
+  | 'BOOKING'
+  | 'APP_ISSUE'
+  | 'OTHER';
+
+export interface Complaint {
+  id: string;
+  submitterName: string;
+  submitterPhone: string;
+  submitterEmail?: string;
+  category: ComplaintCategory;
+  description: string;
+  status: ComplaintStatus;
+  adminNotes?: string;
+  resolvedByName?: string;
+  resolvedAt?: string;
+  property?: Property;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ComplaintFilters {
+  status?: ComplaintStatus;
+  category?: ComplaintCategory;
+  propertyId?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface UpdateComplaintStatusPayload {
+  status: ComplaintStatus;
+  adminNotes?: string;
+}
+
+export interface ComplaintStats {
+  total: number;
+  open: number;
+  inProgress: number;
+  resolved: number;
+  closed: number;
+  thisWeek: number;
+}
+
 // ─── Audit Logs ───────────────────────────────────────────────────────────────
 export type AuditAction =
   | 'CREATE'
@@ -290,13 +372,14 @@ export type AuditAction =
 
 export type AuditEntity =
   | 'PROPERTY'
-  | 'LANDLORD'
+  | 'CONTACT'
   | 'USER'
   | 'IMAGE'
   | 'AUTH'
   | 'HOSTEL_ROOM'
   | 'BOOKING'
-  | 'DISTRICT';
+  | 'DISTRICT'
+  | 'COMPLAINT';
 
 export interface AuditLog {
   id: string;

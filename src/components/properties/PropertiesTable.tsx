@@ -33,44 +33,55 @@ import ImageUploadManager from './ImageUploadManager';
 import PropertyFilterBar from './PropertyFilterBar';
 import DeleteDialog from '@/components/shared/DeleteDialog';
 import { propertiesApi } from '@/lib/api/properties.api';
-import { Property, PropertyFilters } from '@/types';
+import { Property, PropertyFilters, BillingCycle } from '@/types';
 
 const TYPE_LABELS: Record<string, string> = {
-  SINGLE_ROOM: 'Single Room',
-  DOUBLE_ROOM: 'Double Room',
-  APARTMENT: 'Apartment',
-  HOUSE: 'House',
-  STUDIO: 'Studio',
-  HOSTEL: 'Hostel',
+  RESIDENTIAL_HOUSE: 'Residential House',
+  APARTMENT:         'Apartment',
+  AIRBNB:            'AirBnB',
+  OFFICE_SPACE:      'Office Space',
+  BUSINESS_SPACE:    'Business Space',
+  HOSTEL:            'Hostel',
+  HOTEL_LODGE:       'Hotel / Lodge',
+};
+
+const BILLING_LABELS: Record<BillingCycle, string> = {
+  DAILY:       'Daily',
+  MONTHLY:     'Monthly',
+  QUARTERLY:   'Quarterly',
+  FOUR_MONTHS: '4 Months',
+  BIANNUAL:    'Biannual',
+  ANNUAL:      'Annual',
 };
 
 const FURNISHING_LABELS: Record<string, string> = {
-  FURNISHED: 'Furnished',
+  FURNISHED:      'Furnished',
   SEMI_FURNISHED: 'Semi',
-  UNFURNISHED: 'Unfurnished',
+  UNFURNISHED:    'Unfurnished',
 };
 
 const DEFAULT_FILTERS: PropertyFilters & { search?: string } = {};
 
 function exportToCsv(properties: Property[]) {
   const headers = [
-    'Title', 'Area', 'District', 'Type', 'Price (UGX)',
+    'Title', 'Area', 'District', 'Type', 'Price (UGX)', 'Billing',
     'Bedrooms', 'Bathrooms', 'Status', 'Furnishing',
-    'Lease Term', 'Landlord', 'Phone', 'Views', 'Enquiries',
+    'Contact', 'Phone', 'Role', 'Views', 'Enquiries',
   ];
   const rows = properties.map((p) => [
     p.title,
     p.area,
     p.district.name,
-    TYPE_LABELS[p.type],
+    TYPE_LABELS[p.type] ?? p.type,
     p.price,
+    p.billingCycle ? BILLING_LABELS[p.billingCycle] : '',
     p.bedrooms,
     p.bathrooms,
     p.status,
     p.furnishing ?? '',
-    p.leaseTerm ?? '',
-    p.landlord.name,
-    p.landlord.phone,
+    p.contact.name,
+    p.contact.phone,
+    p.contact.role,
     p.viewCount,
     p.enquiryCount,
   ]);
@@ -88,7 +99,6 @@ function exportToCsv(properties: Property[]) {
   URL.revokeObjectURL(url);
 }
 
-// Small helper so each tooltip is one line
 function ActionTooltip({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <Tooltip>
@@ -107,12 +117,13 @@ export default function PropertiesTable() {
   const [selected, setSelected] = useState<Property | null>(null);
 
   const serverFilters: PropertyFilters = {
-    districtId: filters.districtId,
-    type: filters.type,
-    status: filters.status,
-    minPrice: filters.minPrice,
-    maxPrice: filters.maxPrice,
-    bedrooms: filters.bedrooms,
+    districtId:   filters.districtId,
+    type:         filters.type,
+    status:       filters.status,
+    billingCycle: filters.billingCycle,
+    minPrice:     filters.minPrice,
+    maxPrice:     filters.maxPrice,
+    bedrooms:     filters.bedrooms,
     limit: 100,
   };
 
@@ -129,7 +140,7 @@ export default function PropertiesTable() {
       (p) =>
         p.title.toLowerCase().includes(q) ||
         p.area.toLowerCase().includes(q) ||
-        p.landlord.name.toLowerCase().includes(q),
+        p.contact.name.toLowerCase().includes(q),
     );
   }, [data, filters.search]);
 
@@ -223,9 +234,9 @@ export default function PropertiesTable() {
                     <TableHead>Property</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>District</TableHead>
-                    <TableHead>Price/mo</TableHead>
-                    <TableHead>Furnishing</TableHead>
-                    <TableHead>Landlord</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Billing</TableHead>
+                    <TableHead>Contact</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Views</TableHead>
                     <TableHead>Imgs</TableHead>
@@ -267,23 +278,28 @@ export default function PropertiesTable() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline">{TYPE_LABELS[property.type]}</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {TYPE_LABELS[property.type] ?? property.type}
+                          </Badge>
                         </TableCell>
                         <TableCell className="text-sm">{property.district.name}</TableCell>
                         <TableCell className="text-sm font-medium">
                           UGX {Number(property.price).toLocaleString()}
                         </TableCell>
                         <TableCell className="text-sm text-gray-600">
-                          {property.furnishing
-                            ? FURNISHING_LABELS[property.furnishing]
+                          {property.billingCycle
+                            ? BILLING_LABELS[property.billingCycle]
                             : <span className="text-gray-400">—</span>}
                         </TableCell>
-                        <TableCell className="text-sm">{property.landlord.name}</TableCell>
+                        <TableCell className="text-sm">
+                          <div>
+                            <p className="font-medium leading-tight">{property.contact.name}</p>
+                            <p className="text-xs text-gray-500">{property.contact.role}</p>
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <Badge
-                            variant={
-                              property.status === 'AVAILABLE' ? 'default' : 'secondary'
-                            }
+                            variant={property.status === 'AVAILABLE' ? 'default' : 'secondary'}
                           >
                             {property.status === 'AVAILABLE' ? 'Available' : 'Rented Out'}
                           </Badge>

@@ -10,12 +10,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { propertiesApi } from '@/lib/api/properties.api';
 
 const TYPE_LABELS: Record<string, string> = {
-  SINGLE_ROOM: 'Single Room',
-  DOUBLE_ROOM: 'Double Room',
-  APARTMENT: 'Apartment',
-  HOUSE: 'House',
-  STUDIO: 'Studio',
-  HOSTEL: 'Hostel',
+  RESIDENTIAL_HOUSE: 'Residential House',
+  APARTMENT:         'Apartment',
+  AIRBNB:            'AirBnB',
+  OFFICE_SPACE:      'Office Space',
+  BUSINESS_SPACE:    'Business Space',
+  HOSTEL:            'Hostel',
+  HOTEL_LODGE:       'Hotel / Lodge',
 };
 
 export default function RecentProperties() {
@@ -88,7 +89,7 @@ export default function RecentProperties() {
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <Badge variant="outline" className="text-xs hidden sm:flex">
-                      {TYPE_LABELS[property.type]}
+                      {TYPE_LABELS[property.type] ?? property.type}
                     </Badge>
                     <Badge
                       variant={property.status === 'AVAILABLE' ? 'default' : 'secondary'}

@@ -18,63 +18,79 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
-import { landlordSchema, LandlordFormData, LandlordFormInput } from '@/lib/validators';
-import { landlordsApi } from '@/lib/api/landlords.api';
-import { Landlord } from '@/types';
+import { contactSchema, ContactFormInput, ContactFormData } from '@/lib/validators';
+import { contactsApi } from '@/lib/api/contacts.api';
+import { Contact } from '@/types';
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  landlord?: Landlord | null;
+  contact?: Contact | null;
 }
 
-export default function LandlordFormSheet({ open, onClose, landlord }: Props) {
-  const isEditing = !!landlord;
+const ROLE_OPTIONS = [
+  { value: 'OWNER', label: 'Owner — property owner' },
+  { value: 'AGENT', label: 'Agent — broker / property manager' },
+];
+
+export default function ContactFormSheet({ open, onClose, contact }: Props) {
+  const isEditing = !!contact;
   const queryClient = useQueryClient();
 
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors },
-  } = useForm<LandlordFormInput, unknown, LandlordFormData>({
-    resolver: zodResolver(landlordSchema),
+  } = useForm<ContactFormInput, unknown, ContactFormData>({
+    resolver: zodResolver(contactSchema),
   });
 
   useEffect(() => {
-    if (landlord) {
+    if (contact) {
       reset({
-        name: landlord.name,
-        phone: landlord.phone,
-        email: landlord.email ?? '',
-        whatsapp: landlord.whatsapp ?? '',
-        nationalId: landlord.nationalId ?? '',
-        physicalAddress: landlord.physicalAddress ?? '',
-        notes: landlord.notes ?? '',
+        name: contact.name,
+        phone: contact.phone,
+        role: contact.role,
+        email: contact.email ?? '',
+        whatsapp: contact.whatsapp ?? '',
+        nationalId: contact.nationalId ?? '',
+        physicalAddress: contact.physicalAddress ?? '',
+        notes: contact.notes ?? '',
       });
     } else {
       reset({
-        name: '', phone: '', email: '',
-        whatsapp: '', nationalId: '',
+        name: '', phone: '', role: undefined as any,
+        email: '', whatsapp: '', nationalId: '',
         physicalAddress: '', notes: '',
       });
     }
-  }, [landlord, reset]);
+  }, [contact, reset]);
 
   const mutation = useMutation({
-    mutationFn: (data: LandlordFormData) =>
+    mutationFn: (data: ContactFormData) =>
       isEditing
-        ? landlordsApi.update(landlord!.id, data)
-        : landlordsApi.create(data),
+        ? contactsApi.update(contact!.id, data)
+        : contactsApi.create(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['landlords'] });
-      toast.success(
-        isEditing ? 'Landlord updated successfully' : 'Landlord created successfully',
-      );
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      toast.success(isEditing ? 'Contact updated successfully' : 'Contact created successfully');
       onClose();
     },
-    onError: () => toast.error('Something went wrong. Please try again.'),
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message ?? 'Something went wrong. Please try again.';
+      toast.error(Array.isArray(msg) ? msg.join(', ') : msg);
+    },
   });
 
   const SectionLabel = ({ children }: { children: React.ReactNode }) => (
@@ -87,15 +103,34 @@ export default function LandlordFormSheet({ open, onClose, landlord }: Props) {
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent className="!max-w-[600px] !w-[90vw] overflow-y-auto p-6 sm:p-8">
         <SheetHeader className="mb-6">
-          <SheetTitle>{isEditing ? 'Edit Landlord' : 'Add New Landlord'}</SheetTitle>
+          <SheetTitle>{isEditing ? 'Edit Contact' : 'Add New Contact'}</SheetTitle>
           <SheetDescription>
             {isEditing
-              ? 'Update landlord details.'
-              : 'Fill in the details to register a new landlord.'}
+              ? 'Update contact details.'
+              : 'Register a property owner or agent.'}
           </SheetDescription>
         </SheetHeader>
 
         <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-4">
+          <SectionLabel>Role</SectionLabel>
+          <div className="space-y-1.5">
+            <Label>Role <span className="text-destructive">*</span></Label>
+            <Select
+              value={watch('role') ?? ''}
+              onValueChange={(v) => setValue('role', v as ContactFormData['role'], { shouldValidate: true })}
+            >
+              <SelectTrigger className={errors.role ? 'border-destructive' : ''}>
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                {ROLE_OPTIONS.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.role && <p className="text-sm text-destructive">{errors.role.message}</p>}
+          </div>
+
           <SectionLabel>Contact Information</SectionLabel>
           <div className="space-y-1.5">
             <Label htmlFor="name">Full Name <span className="text-destructive">*</span></Label>
@@ -164,7 +199,7 @@ export default function LandlordFormSheet({ open, onClose, landlord }: Props) {
             <Button type="submit" className="flex-1" disabled={mutation.isPending}>
               {mutation.isPending ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
-              ) : isEditing ? 'Update Landlord' : 'Create Landlord'}
+              ) : isEditing ? 'Update Contact' : 'Create Contact'}
             </Button>
           </div>
         </form>
