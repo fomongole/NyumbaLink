@@ -136,7 +136,6 @@ function ComplaintDetailSheet({
         </SheetHeader>
 
         <div className="space-y-5">
-          {/* Status */}
           <div className="flex items-center gap-3">
             <span
               className={`inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1 rounded-full border ${badge.className}`}
@@ -149,7 +148,6 @@ function ComplaintDetailSheet({
             </Badge>
           </div>
 
-          {/* Submitter */}
           <div className="rounded-lg border p-4 space-y-1.5">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Submitter</p>
             <p className="font-medium">{complaint.submitterName}</p>
@@ -159,7 +157,6 @@ function ComplaintDetailSheet({
             )}
           </div>
 
-          {/* Property */}
           {complaint.property && (
             <div className="rounded-lg border p-4 space-y-1">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Related Property</p>
@@ -168,7 +165,6 @@ function ComplaintDetailSheet({
             </div>
           )}
 
-          {/* Description */}
           <div className="space-y-1.5">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Description</p>
             <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
@@ -176,7 +172,6 @@ function ComplaintDetailSheet({
             </p>
           </div>
 
-          {/* Admin notes (existing) */}
           {complaint.adminNotes && (
             <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 space-y-1">
               <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Admin Notes</p>
@@ -189,7 +184,6 @@ function ComplaintDetailSheet({
             </div>
           )}
 
-          {/* Update status */}
           {allowedNext.length > 0 && (
             <div className="rounded-lg border p-4 space-y-3">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Update Status</p>
@@ -233,30 +227,30 @@ function ComplaintDetailSheet({
   );
 }
 
-// ── Stat Card ─────────────────────────────────────────────────────────────────
+// ── Stat Card (Updated to Dashboard Style) ───────────────────────────────────
 
 function StatCard({
-  label, value, icon: Icon, color, bg, pulse,
+  label, value, icon: Icon, color, bg, loading
 }: {
   label: string; value: number; icon: React.ElementType;
-  color: string; bg: string; pulse?: boolean;
+  color: string; bg: string; loading?: boolean;
 }) {
   return (
-    <Card className="border shadow-sm">
-      <CardContent className="pt-5 pb-4 px-5">
-        <div className="flex items-center justify-between mb-3">
-          <div className={`h-9 w-9 rounded-lg ${bg} flex items-center justify-center`}>
-            <Icon className={`h-4 w-4 ${color}`} />
-          </div>
-          {pulse && (
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500" />
-            </span>
-          )}
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+        <CardTitle className="text-sm font-medium text-gray-600">
+          {label}
+        </CardTitle>
+        <div className={`${bg} p-2 rounded-lg`}>
+          <Icon className={`h-4 w-4 ${color}`} />
         </div>
-        <p className="text-2xl font-bold text-gray-900 leading-none">{value}</p>
-        <p className="text-xs text-gray-500 mt-1">{label}</p>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <Skeleton className="h-8 w-16" />
+        ) : (
+          <p className="text-3xl font-bold text-gray-900">{value}</p>
+        )}
       </CardContent>
     </Card>
   );
@@ -284,7 +278,7 @@ export default function ComplaintsTable() {
     queryFn: () => complaintsApi.getAll(filters),
   });
 
-  const { data: stats } = useQuery({
+  const { data: stats, isLoading: loadingStats } = useQuery({
     queryKey: ['complaint-stats'],
     queryFn: complaintsApi.getStats,
   });
@@ -309,12 +303,40 @@ export default function ComplaintsTable() {
 
   return (
     <>
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Total" value={stats?.total ?? 0} icon={Filter} color="text-gray-600" bg="bg-gray-50" />
-        <StatCard label="Open" value={stats?.open ?? 0} icon={AlertCircle} color="text-red-600" bg="bg-red-50" pulse={!!stats?.open} />
-        <StatCard label="In Progress" value={stats?.inProgress ?? 0} icon={Clock} color="text-amber-600" bg="bg-amber-50" />
-        <StatCard label="This Week" value={stats?.thisWeek ?? 0} icon={CheckCircle2} color="text-blue-600" bg="bg-blue-50" />
+      {/* Stats Row - Updated Grid and Style */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <StatCard 
+          label="Total" 
+          value={stats?.total ?? 0} 
+          icon={Filter} 
+          color="text-gray-600" 
+          bg="bg-gray-50" 
+          loading={loadingStats}
+        />
+        <StatCard 
+          label="Open" 
+          value={stats?.open ?? 0} 
+          icon={AlertCircle} 
+          color="text-red-600" 
+          bg="bg-red-50" 
+          loading={loadingStats}
+        />
+        <StatCard 
+          label="In Progress" 
+          value={stats?.inProgress ?? 0} 
+          icon={Clock} 
+          color="text-amber-600" 
+          bg="bg-amber-50" 
+          loading={loadingStats}
+        />
+        <StatCard 
+          label="This Week" 
+          value={stats?.thisWeek ?? 0} 
+          icon={CheckCircle2} 
+          color="text-blue-600" 
+          bg="bg-blue-50" 
+          loading={loadingStats}
+        />
       </div>
 
       <Card>
@@ -358,7 +380,6 @@ export default function ComplaintsTable() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Status Tabs */}
           <Tabs
             value={activeTab}
             onValueChange={(v) => { setActiveTab(v as any); setPage(1); }}
@@ -469,7 +490,6 @@ export default function ComplaintsTable() {
             </div>
           )}
 
-          {/* Pagination */}
           {data && data.meta.totalPages > 1 && (
             <div className="flex items-center justify-between pt-2">
               <p className="text-xs text-gray-500">

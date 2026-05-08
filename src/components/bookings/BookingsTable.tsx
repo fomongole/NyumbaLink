@@ -9,16 +9,11 @@ import {
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Card, CardContent, CardHeader, CardTitle, CardDescription,
 } from '@/components/ui/card';
-import {
-  Select, SelectContent, SelectItem,
-  SelectTrigger, SelectValue,
-} from '@/components/ui/select';
 import {
   Table, TableBody, TableCell,
   TableHead, TableHeader, TableRow,
@@ -81,7 +76,7 @@ export default function BookingsTable() {
     queryFn: () => bookingsApi.getAll(filters),
   });
 
-  const { data: stats } = useQuery({
+  const { data: stats, isLoading: loadingStats } = useQuery({
     queryKey: ['booking-stats'],
     queryFn: bookingsApi.getStats,
   });
@@ -110,14 +105,15 @@ export default function BookingsTable() {
 
   return (
     <>
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      {/* Stats Row - Matches Dashboard Layout */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
           label="Total Bookings"
           value={stats?.total ?? 0}
           icon={Filter}
-          color="text-gray-600"
-          bg="bg-gray-50"
+          color="text-blue-600"
+          bg="bg-blue-50"
+          loading={loadingStats}
         />
         <StatCard
           label="Pending"
@@ -125,7 +121,7 @@ export default function BookingsTable() {
           icon={Clock}
           color="text-amber-600"
           bg="bg-amber-50"
-          pulse={!!stats?.pending}
+          loading={loadingStats}
         />
         <StatCard
           label="Confirmed"
@@ -133,13 +129,15 @@ export default function BookingsTable() {
           icon={CheckCircle2}
           color="text-emerald-600"
           bg="bg-emerald-50"
+          loading={loadingStats}
         />
         <StatCard
           label="This Week"
           value={stats?.thisWeek ?? 0}
           icon={CalendarDays}
-          color="text-blue-600"
-          bg="bg-blue-50"
+          color="text-purple-600"
+          bg="bg-purple-50"
+          loading={loadingStats}
         />
       </div>
 
@@ -165,7 +163,6 @@ export default function BookingsTable() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* Status Tabs */}
           <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as any); setPage(1); }}>
             <TabsList className="h-9 bg-gray-100 p-1 gap-1 flex-wrap">
               {STATUS_TABS.map(({ value, label, icon: Icon }) => (
@@ -292,7 +289,6 @@ export default function BookingsTable() {
             </div>
           )}
 
-          {/* Pagination */}
           {data && data.meta.totalPages > 1 && (
             <div className="flex items-center justify-between pt-2">
               <p className="text-xs text-gray-500">
@@ -331,27 +327,27 @@ export default function BookingsTable() {
 }
 
 function StatCard({
-  label, value, icon: Icon, color, bg, pulse,
+  label, value, icon: Icon, color, bg, loading
 }: {
   label: string; value: number; icon: React.ElementType;
-  color: string; bg: string; pulse?: boolean;
+  color: string; bg: string; loading?: boolean;
 }) {
   return (
-    <Card className="border shadow-sm">
-      <CardContent className="pt-5 pb-4 px-5">
-        <div className="flex items-center justify-between mb-3">
-          <div className={`h-9 w-9 rounded-lg ${bg} flex items-center justify-center`}>
-            <Icon className={`h-4.5 w-4.5 ${color}`} />
-          </div>
-          {pulse && (
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500" />
-            </span>
-          )}
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+        <CardTitle className="text-sm font-medium text-gray-600">
+          {label}
+        </CardTitle>
+        <div className={`${bg} p-2 rounded-lg`}>
+          <Icon className={`h-4 w-4 ${color}`} />
         </div>
-        <p className="text-2xl font-bold text-gray-900 leading-none">{value}</p>
-        <p className="text-xs text-gray-500 mt-1">{label}</p>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <Skeleton className="h-8 w-16" />
+        ) : (
+          <p className="text-3xl font-bold text-gray-900">{value}</p>
+        )}
       </CardContent>
     </Card>
   );
