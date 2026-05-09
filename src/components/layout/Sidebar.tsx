@@ -7,6 +7,7 @@ import {
   LayoutDashboard, Building2, Users, ShieldCheck,
   ScrollText, Settings, LogOut, CalendarCheck,
   MessageSquareWarning, ContactRound,
+  Bell,
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
@@ -20,13 +21,14 @@ import {
 import { Button } from '@/components/ui/button';
 
 const navItems = [
-  { label: 'Dashboard',   href: '/',           icon: LayoutDashboard },
-  { label: 'Properties',  href: '/properties', icon: Building2 },
-  { label: 'Contacts',    href: '/contacts',   icon: ContactRound },
-  { label: 'Bookings',    href: '/bookings',   icon: CalendarCheck },
-  { label: 'Complaints',  href: '/complaints', icon: MessageSquareWarning },
-  { label: 'Users',       href: '/users',      icon: ShieldCheck },
-  { label: 'Audit Logs',  href: '/audit-logs', icon: ScrollText },
+  { label: 'Dashboard',      href: '/',               icon: LayoutDashboard },
+  { label: 'Properties',     href: '/properties',     icon: Building2 },
+  { label: 'Contacts',       href: '/contacts',       icon: ContactRound },
+  { label: 'Bookings',       href: '/bookings',       icon: CalendarCheck },
+  { label: 'Complaints',     href: '/complaints',     icon: MessageSquareWarning },
+  { label: 'Notifications',  href: '/notifications',  icon: Bell },
+  { label: 'Users',          href: '/users',          icon: ShieldCheck },
+  { label: 'Audit Logs',     href: '/audit-logs',     icon: ScrollText },
 ];
 
 export default function Sidebar() {

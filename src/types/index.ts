@@ -421,3 +421,16 @@ export interface ApiError {
   error: string;
   statusCode: number;
 }
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+export type NotificationType =
+  | 'BOOKING_CONFIRMED' | 'BOOKING_CANCELLED' | 'BOOKING_COMPLETED'
+  | 'COMPLAINT_UPDATED' | 'NEW_PROPERTY'
+  | 'WELCOME' | 'ACCOUNT_ACTIVATED' | 'ACCOUNT_DEACTIVATED'
+  | 'PASSWORD_CHANGED' | 'SYSTEM_ALERT';
+
+export interface BroadcastNotificationPayload {
+  title: string;
+  message: string;
+  data?: Record<string, unknown>;
+}
