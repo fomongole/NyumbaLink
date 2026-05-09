@@ -25,15 +25,12 @@ export default function ImageUploadManager({ open, onClose, property }: Props) {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previews, setPreviews] = useState<FilePreview[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
 
-  // Revoke object URLs on cleanup to avoid memory leaks
   useEffect(() => {
-    return () => {
-      previews.forEach((p) => URL.revokeObjectURL(p.objectUrl));
-    };
+    return () => { previews.forEach((p) => URL.revokeObjectURL(p.objectUrl)); };
   }, [previews]);
 
-  // Clear previews when dialog closes
   useEffect(() => {
     if (!open) {
       previews.forEach((p) => URL.revokeObjectURL(p.objectUrl));
@@ -71,19 +68,42 @@ export default function ImageUploadManager({ open, onClose, property }: Props) {
     onError: () => toast.error('Failed to set primary image.'),
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files ?? []);
-    const remaining = 8 - property.images.length;
-
-    if (files.length > remaining) {
-      toast.error(`You can only upload ${remaining} more image(s).`);
-      e.target.value = '';
+  // Shared validation + preview logic — used by both click-select and drag-and-drop
+  const processFiles = (files: File[]) => {
+    const imageFiles = files.filter((f) => f.type.startsWith('image/'));
+    if (imageFiles.length === 0) {
+      toast.error('Please select image files only.');
       return;
     }
-
-    // Revoke previous previews before creating new ones
+    const remaining = 8 - property.images.length;
+    if (imageFiles.length > remaining) {
+      toast.error(`You can only upload ${remaining} more image${remaining !== 1 ? 's' : ''}.`);
+      return;
+    }
     previews.forEach((p) => URL.revokeObjectURL(p.objectUrl));
-    setPreviews(files.map((file) => ({ file, objectUrl: URL.createObjectURL(file) })));
+    setPreviews(imageFiles.map((file) => ({ file, objectUrl: URL.createObjectURL(file) })));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    processFiles(files);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const files = Array.from(e.dataTransfer.files);
+    processFiles(files);
   };
 
   const removePreview = (index: number) => {
@@ -177,8 +197,6 @@ export default function ImageUploadManager({ open, onClose, property }: Props) {
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                   Selected for upload ({previews.length})
                 </p>
-
-                {/* Preview grid */}
                 <div className="grid grid-cols-3 gap-3">
                   {previews.map((preview, index) => (
                     <div
@@ -204,7 +222,6 @@ export default function ImageUploadManager({ open, onClose, property }: Props) {
                     </div>
                   ))}
                 </div>
-
                 <div className="flex gap-3">
                   <Button
                     variant="outline"
@@ -228,14 +245,36 @@ export default function ImageUploadManager({ open, onClose, property }: Props) {
                 </div>
               </div>
             ) : (
-              <Button
-                variant="outline"
-                className="w-full py-6 border-dashed"
+              /* ── Drag-and-drop zone ── */
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
+                className={`
+                  w-full rounded-xl border-2 border-dashed cursor-pointer
+                  transition-colors duration-150 select-none
+                  flex flex-col items-center justify-center gap-2 py-10
+                  ${isDragOver
+                    ? 'border-primary bg-primary/5 text-primary'
+                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-400'
+                  }
+                `}
               >
-                <Upload className="mr-2 h-4 w-4" />
-                Click to select images ({slotsRemaining} slot{slotsRemaining !== 1 ? 's' : ''} remaining)
-              </Button>
+                <div className={`h-12 w-12 rounded-full flex items-center justify-center transition-colors ${
+                  isDragOver ? 'bg-primary/10' : 'bg-gray-100'
+                }`}>
+                  <Upload className={`h-5 w-5 transition-colors ${isDragOver ? 'text-primary' : 'text-gray-400'}`} />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium">
+                    {isDragOver ? 'Drop images here' : 'Drag & drop images here'}
+                  </p>
+                  <p className="text-xs mt-0.5 text-gray-400">
+                    or click to browse · {slotsRemaining} slot{slotsRemaining !== 1 ? 's' : ''} remaining
+                  </p>
+                </div>
+              </div>
             )}
           </div>
         )}

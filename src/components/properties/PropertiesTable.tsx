@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Plus, Pencil, Trash2, Images, ToggleLeft,
-  ToggleRight, Eye, Download,
+  ToggleRight, Eye, Download, MoreHorizontal,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -21,6 +21,13 @@ import {
   Table, TableBody, TableCell,
   TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Tooltip,
   TooltipContent,
@@ -52,12 +59,6 @@ const BILLING_LABELS: Record<BillingCycle, string> = {
   FOUR_MONTHS: '4 Months',
   BIANNUAL:    'Biannual',
   ANNUAL:      'Annual',
-};
-
-const FURNISHING_LABELS: Record<string, string> = {
-  FURNISHED:      'Furnished',
-  SEMI_FURNISHED: 'Semi',
-  UNFURNISHED:    'Unfurnished',
 };
 
 const DEFAULT_FILTERS: PropertyFilters & { search?: string } = {};
@@ -97,15 +98,6 @@ function exportToCsv(properties: Property[]) {
   a.download = `nyumbalink-properties-${new Date().toISOString().split('T')[0]}.csv`;
   a.click();
   URL.revokeObjectURL(url);
-}
-
-function ActionTooltip({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{children}</TooltipTrigger>
-      <TooltipContent side="top" className="text-xs">{label}</TooltipContent>
-    </Tooltip>
-  );
 }
 
 export default function PropertiesTable() {
@@ -239,7 +231,7 @@ export default function PropertiesTable() {
                     <TableHead>Contact</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Views</TableHead>
-                    <TableHead>Imgs</TableHead>
+                    <TableHead>Images</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -249,6 +241,8 @@ export default function PropertiesTable() {
                       property.images.find((i) => i.isPrimary) ?? property.images[0];
                     return (
                       <TableRow key={property.id}>
+
+                        {/* Property */}
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div className="h-12 w-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
@@ -277,26 +271,38 @@ export default function PropertiesTable() {
                             </div>
                           </div>
                         </TableCell>
+
+                        {/* Type */}
                         <TableCell>
                           <Badge variant="outline" className="text-xs">
                             {TYPE_LABELS[property.type] ?? property.type}
                           </Badge>
                         </TableCell>
+
+                        {/* District */}
                         <TableCell className="text-sm">{property.district.name}</TableCell>
+
+                        {/* Price */}
                         <TableCell className="text-sm font-medium">
                           UGX {Number(property.price).toLocaleString()}
                         </TableCell>
+
+                        {/* Billing */}
                         <TableCell className="text-sm text-gray-600">
                           {property.billingCycle
                             ? BILLING_LABELS[property.billingCycle]
                             : <span className="text-gray-400">—</span>}
                         </TableCell>
+
+                        {/* Contact */}
                         <TableCell className="text-sm">
                           <div>
                             <p className="font-medium leading-tight">{property.contact.name}</p>
                             <p className="text-xs text-gray-500">{property.contact.role}</p>
                           </div>
                         </TableCell>
+
+                        {/* Status */}
                         <TableCell>
                           <Badge
                             variant={property.status === 'AVAILABLE' ? 'default' : 'secondary'}
@@ -304,74 +310,97 @@ export default function PropertiesTable() {
                             {property.status === 'AVAILABLE' ? 'Available' : 'Rented Out'}
                           </Badge>
                         </TableCell>
+
+                        {/* Views */}
                         <TableCell className="text-sm text-gray-500">
                           {property.viewCount}
                         </TableCell>
+
+                        {/* Images */}
                         <TableCell className="text-sm text-gray-500">
                           {property.images.length}/8
                         </TableCell>
+
+                        {/* Actions — View (primary) + ⋯ dropdown (secondary) */}
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-                            <ActionTooltip label="View details">
-                              <Link href={`/properties/${property.id}`}>
+
+                            {/* Primary: View */}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Link href={`/properties/${property.id}`}>
+                                  <Button size="sm" variant="outline">
+                                    <Eye className="h-3.5 w-3.5" />
+                                  </Button>
+                                </Link>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-xs">
+                                View details
+                              </TooltipContent>
+                            </Tooltip>
+
+                            {/* Secondary: ⋯ dropdown */}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
                                 <Button size="sm" variant="outline">
-                                  <Eye className="h-3.5 w-3.5" />
+                                  <MoreHorizontal className="h-3.5 w-3.5" />
                                 </Button>
-                              </Link>
-                            </ActionTooltip>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48">
 
-                            <ActionTooltip label="Manage images">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleImages(property)}
-                              >
-                                <Images className="h-3.5 w-3.5" />
-                              </Button>
-                            </ActionTooltip>
+                                <DropdownMenuItem
+                                  onClick={() => handleImages(property)}
+                                  className="gap-2 cursor-pointer"
+                                >
+                                  <Images className="h-3.5 w-3.5 text-gray-500" />
+                                  Manage images
+                                  <span className="ml-auto text-xs text-gray-400">
+                                    {property.images.length}/8
+                                  </span>
+                                </DropdownMenuItem>
 
-                            <ActionTooltip
-                              label={
-                                property.status === 'AVAILABLE'
-                                  ? 'Mark as rented'
-                                  : 'Mark as available'
-                              }
-                            >
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => toggleMutation.mutate(property.id)}
-                                disabled={toggleMutation.isPending}
-                              >
-                                {property.status === 'AVAILABLE' ? (
-                                  <ToggleRight className="h-3.5 w-3.5 text-green-600" />
-                                ) : (
-                                  <ToggleLeft className="h-3.5 w-3.5 text-gray-400" />
-                                )}
-                              </Button>
-                            </ActionTooltip>
+                                <DropdownMenuItem
+                                  onClick={() => handleEdit(property)}
+                                  className="gap-2 cursor-pointer"
+                                >
+                                  <Pencil className="h-3.5 w-3.5 text-gray-500" />
+                                  Edit property
+                                </DropdownMenuItem>
 
-                            <ActionTooltip label="Edit property">
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleEdit(property)}
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                            </ActionTooltip>
+                                <DropdownMenuItem
+                                  onClick={() => toggleMutation.mutate(property.id)}
+                                  disabled={toggleMutation.isPending}
+                                  className="gap-2 cursor-pointer"
+                                >
+                                  {property.status === 'AVAILABLE' ? (
+                                    <>
+                                      <ToggleRight className="h-3.5 w-3.5 text-green-600" />
+                                      Mark as rented
+                                    </>
+                                  ) : (
+                                    <>
+                                      <ToggleLeft className="h-3.5 w-3.5 text-gray-400" />
+                                      Mark as available
+                                    </>
+                                  )}
+                                </DropdownMenuItem>
 
-                            <ActionTooltip label="Delete property">
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => handleDelete(property)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </ActionTooltip>
+                                <DropdownMenuSeparator />
+
+                                <DropdownMenuItem
+                                  onClick={() => handleDelete(property)}
+                                  className="gap-2 cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                  Delete property
+                                </DropdownMenuItem>
+
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+
                           </div>
                         </TableCell>
+
                       </TableRow>
                     );
                   })}

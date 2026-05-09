@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
-  X, User, Phone, Mail, Building2, BedDouble,
+  User, Phone, Mail, Building2, BedDouble,
   Calendar, CheckCircle2, XCircle, Clock, BadgeCheck,
-  MessageSquare, ChevronRight, AlertTriangle,
+  ChevronRight, AlertTriangle,
 } from 'lucide-react';
 
 import {
@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
@@ -34,10 +33,7 @@ interface Props {
 }
 
 const STATUS_CONFIG: Record<BookingStatus, {
-  label: string;
-  color: string;
-  icon: React.ElementType;
-  bg: string;
+  label: string; color: string; icon: React.ElementType; bg: string;
 }> = {
   PENDING: {
     label: 'Pending Review',
@@ -89,6 +85,19 @@ export default function BookingDetailSheet({ booking, open, onClose }: Props) {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
 
+  // Focus the primary action button once the sheet animation has settled (~150ms)
+  const confirmBtnRef = useRef<HTMLButtonElement>(null);
+  const completeBtnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const timer = setTimeout(() => {
+      if (booking?.status === 'PENDING') confirmBtnRef.current?.focus();
+      if (booking?.status === 'CONFIRMED') completeBtnRef.current?.focus();
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [open, booking?.status]);
+
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['bookings'] });
     queryClient.invalidateQueries({ queryKey: ['booking-stats'] });
@@ -132,7 +141,6 @@ export default function BookingDetailSheet({ booking, open, onClose }: Props) {
     <>
       <Sheet open={open} onOpenChange={onClose}>
         <SheetContent className="!w-[480px] !max-w-[95vw] overflow-y-auto p-0">
-          {/* Header */}
           <div className="sticky top-0 z-10 bg-white border-b px-6 py-4">
             <SheetHeader>
               <SheetTitle className="text-base font-semibold">Booking Details</SheetTitle>
@@ -212,7 +220,6 @@ export default function BookingDetailSheet({ booking, open, onClose }: Props) {
               </div>
             </section>
 
-            {/* Notes */}
             {booking.notes && (
               <section>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
@@ -224,7 +231,6 @@ export default function BookingDetailSheet({ booking, open, onClose }: Props) {
               </section>
             )}
 
-            {/* Admin Notes */}
             {booking.adminNotes && (
               <section>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
@@ -236,7 +242,6 @@ export default function BookingDetailSheet({ booking, open, onClose }: Props) {
               </section>
             )}
 
-            {/* Cancellation Info */}
             {booking.status === 'CANCELLED' && (
               <section>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
@@ -254,7 +259,6 @@ export default function BookingDetailSheet({ booking, open, onClose }: Props) {
               </section>
             )}
 
-            {/* Timeline */}
             {(booking.confirmedAt || booking.cancelledAt) && (
               <section>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
@@ -272,7 +276,7 @@ export default function BookingDetailSheet({ booking, open, onClose }: Props) {
               </section>
             )}
 
-            {/* Actions */}
+            {/* PENDING actions */}
             {booking.status === 'PENDING' && (
               <section className="pt-2">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
@@ -290,7 +294,9 @@ export default function BookingDetailSheet({ booking, open, onClose }: Props) {
                     />
                   </div>
                   <div className="flex gap-2">
+                    {/* ref + autoFocus via useEffect above */}
                     <Button
+                      ref={confirmBtnRef}
                       className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
                       onClick={() => setConfirmDialogOpen(true)}
                       disabled={confirmMutation.isPending}
@@ -311,9 +317,11 @@ export default function BookingDetailSheet({ booking, open, onClose }: Props) {
               </section>
             )}
 
+            {/* CONFIRMED actions */}
             {booking.status === 'CONFIRMED' && (
               <section className="pt-2 flex gap-2">
                 <Button
+                  ref={completeBtnRef}
                   className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
                   onClick={() => setCompleteDialogOpen(true)}
                   disabled={completeMutation.isPending}
@@ -335,14 +343,12 @@ export default function BookingDetailSheet({ booking, open, onClose }: Props) {
         </SheetContent>
       </Sheet>
 
-      {/* Confirm Dialog */}
       <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm this booking?</AlertDialogTitle>
             <AlertDialogDescription>
               This will mark the booking as confirmed and set the room/property to occupied.
-              The renter will be notified.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -357,7 +363,6 @@ export default function BookingDetailSheet({ booking, open, onClose }: Props) {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Cancel Dialog */}
       <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -391,7 +396,6 @@ export default function BookingDetailSheet({ booking, open, onClose }: Props) {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Complete Dialog */}
       <AlertDialog open={completeDialogOpen} onOpenChange={setCompleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

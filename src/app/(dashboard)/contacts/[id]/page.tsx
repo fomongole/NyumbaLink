@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft, Phone, MessageCircle, Mail,
+  ChevronRight, Phone, MessageCircle, Mail,
   MapPin, CreditCard, Building2, Pencil,
   Trash2, Eye,
 } from 'lucide-react';
@@ -114,16 +114,23 @@ export default function ContactDetailPage({
       />
 
       <main className="flex-1 p-6 space-y-6">
-        {/* Back + Actions */}
-        <div className="flex items-center justify-between">
-          <Link
-            href="/contacts"
-            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Contacts
-          </Link>
-          <div className="flex gap-2">
+        {/* Top Nav */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* Breadcrumb */}
+          <nav className="flex items-center gap-1.5 text-sm min-w-0">
+            <Link href="/" className="text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">
+              Dashboard
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5 text-gray-300 flex-shrink-0" />
+            <Link href="/contacts" className="text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">
+              Contacts
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5 text-gray-300 flex-shrink-0" />
+            <span className="text-gray-700 font-medium truncate">{contact.name}</span>
+          </nav>
+
+          {/* Action buttons */}
+          <div className="flex gap-2 shrink-0">
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
               <Pencil className="h-4 w-4 mr-1.5" />
               Edit

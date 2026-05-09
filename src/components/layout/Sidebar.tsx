@@ -4,16 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  LayoutDashboard,
-  Building2,
-  Users,
-  ShieldCheck,
-  ScrollText,
-  Settings,
-  LogOut,
-  CalendarCheck,
-  MessageSquareWarning,
-  ContactRound,
+  LayoutDashboard, Building2, Users, ShieldCheck,
+  ScrollText, Settings, LogOut, CalendarCheck,
+  MessageSquareWarning, ContactRound,
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
@@ -21,12 +14,8 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Logo } from '@/components/shared/Logo';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription,
+  DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
@@ -61,7 +50,7 @@ export default function Sidebar() {
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive =
@@ -73,37 +62,39 @@ export default function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                  // border-l-[3px] on every item keeps layout stable (no shift on active toggle)
+                  // pl-[9px] compensates for the 3px border so text stays visually at 12px from edge
+                  'flex items-center gap-3 pl-[9px] pr-3 py-2.5 rounded-lg text-sm font-medium transition-colors border-l-[3px]',
                   isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-gray-400 hover:bg-gray-800 hover:text-white',
+                    ? 'bg-primary text-primary-foreground border-primary-foreground/40'
+                    : 'text-gray-400 hover:bg-gray-800 hover:text-white border-transparent',
                 )}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className="h-4 w-4 shrink-0" />
                 {item.label}
               </Link>
             );
           })}
         </nav>
 
-        <div className="px-3 py-4 border-t border-gray-800 space-y-1 shrink-0">
+        <div className="px-3 py-4 border-t border-gray-800 space-y-0.5 shrink-0">
           <Link
             href="/settings"
             className={cn(
-              'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+              'flex items-center gap-3 pl-[9px] pr-3 py-2.5 rounded-lg text-sm font-medium transition-colors border-l-[3px]',
               pathname === '/settings'
-                ? 'bg-primary text-primary-foreground'
-                : 'text-gray-400 hover:bg-gray-800 hover:text-white',
+                ? 'bg-primary text-primary-foreground border-primary-foreground/40'
+                : 'text-gray-400 hover:bg-gray-800 hover:text-white border-transparent',
             )}
           >
-            <Settings className="h-4 w-4" />
+            <Settings className="h-4 w-4 shrink-0" />
             Settings
           </Link>
           <button
             onClick={() => setIsLogoutDialogOpen(true)}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white transition-colors w-full"
+            className="flex items-center gap-3 pl-[9px] pr-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white transition-colors w-full border-l-[3px] border-transparent"
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-4 w-4 shrink-0" />
             Log out
           </button>
         </div>
