@@ -6,7 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Loader2, Info } from 'lucide-react';
-
 import {
   Sheet, SheetContent, SheetHeader,
   SheetTitle, SheetDescription,
@@ -19,7 +18,6 @@ import {
   Select, SelectContent, SelectItem,
   SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-
 import { propertySchema, PropertyFormData } from '@/lib/validators';
 import { propertiesApi } from '@/lib/api/properties.api';
 import { contactsApi } from '@/lib/api/contacts.api';
@@ -111,8 +109,9 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
         residentialSubtype:  property.residentialSubtype ?? undefined,
         price:               property.price,
         billingCycle:        property.billingCycle ?? undefined,
-        bedrooms:            property.bedrooms,
-        bathrooms:           property.bathrooms,
+        numberOfRooms:       property.numberOfRooms,
+        totalRooms:          property.totalRooms ?? undefined,
+        hotelCategory:       property.hotelCategory ?? undefined,
         area:                property.area,
         address:             property.address ?? '',
         latitude:            property.latitude,
@@ -165,14 +164,7 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      {/*
-        Key structural change:
-        - SheetContent is now flex flex-col p-0 (no overflow-y-auto on the whole panel)
-        - A scrollable middle section holds the form fields
-        - A sticky footer holds the action buttons — always visible regardless of scroll position
-      */}
       <SheetContent className="!max-w-[800px] !w-[90vw] flex flex-col p-0">
-
         {/* ── Non-scrolling header ── */}
         <div className="px-6 sm:px-8 pt-6 pb-4 border-b shrink-0">
           <SheetHeader>
@@ -288,31 +280,30 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
               </div>
             )}
 
-            {fieldConfig?.isHostel && (
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm">
-                <Info className="h-4 w-4 mt-0.5 shrink-0" />
-                <p>
-                  After saving, you can add individual rooms with their own prices and billing
-                  periods from the property detail page.
-                </p>
+            {fieldConfig?.showNumberOfRooms && (
+              <div className="space-y-1.5">
+                <Label>Number of Rooms</Label>
+                <Input type="number" min={1} placeholder="e.g. 3" {...register('numberOfRooms')} />
               </div>
             )}
 
-            {(fieldConfig?.showBedrooms || fieldConfig?.showBathrooms) && (
-              <div className="grid grid-cols-2 gap-4">
-                {fieldConfig?.showBedrooms && (
+            {fieldConfig?.isHostel && (
+              <>
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm">
+                  <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                  <p>
+                    After saving, you can add individual rooms with their own prices and billing
+                    periods from the property detail page.
+                  </p>
+                </div>
+                {fieldConfig?.showTotalRooms && (
                   <div className="space-y-1.5">
-                    <Label>Bedrooms</Label>
-                    <Input type="number" min={1} placeholder="1" {...register('bedrooms')} />
+                    <Label>Total Rooms (capacity cap)</Label>
+                    <Input type="number" min={1} placeholder="e.g. 20 — leave empty for no limit" {...register('totalRooms')} />
+                    <p className="text-xs text-gray-500">Rooms added to this hostel cannot exceed this number.</p>
                   </div>
                 )}
-                {fieldConfig?.showBathrooms && (
-                  <div className="space-y-1.5">
-                    <Label>Bathrooms</Label>
-                    <Input type="number" min={1} placeholder="1" {...register('bathrooms')} />
-                  </div>
-                )}
-              </div>
+              </>
             )}
 
             <div className="grid grid-cols-2 gap-4">
@@ -388,6 +379,7 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             </div>
 
             {(fieldConfig?.showFurnishing ||
+              fieldConfig?.showHotelCategory ||
               fieldConfig?.showSecurityDeposit ||
               fieldConfig?.showFloor ||
               fieldConfig?.showParking) && (
@@ -414,6 +406,24 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                   </div>
                 )}
 
+                {fieldConfig?.showHotelCategory && (
+                  <div className="space-y-1.5">
+                    <Label>Category</Label>
+                    <Select
+                      value={watch('hotelCategory') ?? UNSET}
+                      onValueChange={(v) => setVal('hotelCategory', v === UNSET ? undefined : v)}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={UNSET}>Not specified</SelectItem>
+                        <SelectItem value="ORDINARY">Ordinary</SelectItem>
+                        <SelectItem value="VIP">VIP</SelectItem>
+                        <SelectItem value="VVIP">VVIP</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   {fieldConfig?.showSecurityDeposit && (
                     <div className="space-y-1.5">
@@ -421,6 +431,7 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                       <Input type="number" placeholder="e.g. 500000" {...register('securityDeposit')} />
                     </div>
                   )}
+
                   {fieldConfig?.showFloor && (
                     <div className="space-y-1.5">
                       <Label>Floor / Level</Label>
@@ -434,6 +445,7 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                     <Label>Available From</Label>
                     <Input type="date" {...register('availableFrom')} />
                   </div>
+
                   {fieldConfig?.showParking && (
                     <div className="space-y-1.5">
                       <Label>Parking Available</Label>
@@ -486,7 +498,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
               </div>
             )}
 
-            {/* Bottom padding so last field isn't hidden behind the sticky footer */}
             <div className="h-2" />
           </form>
         </div>
@@ -497,10 +508,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
               Cancel
             </Button>
-            {/*
-              form="property-form" links this button to the <form id="property-form"> above,
-              allowing it to live outside the form element while still triggering submission.
-            */}
             <Button
               type="submit"
               form="property-form"
@@ -513,7 +520,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
             </Button>
           </div>
         </div>
-
       </SheetContent>
     </Sheet>
   );

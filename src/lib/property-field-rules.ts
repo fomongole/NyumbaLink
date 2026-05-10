@@ -1,12 +1,11 @@
-// src/lib/property-field-rules.ts
 // Mirror of backend: src/modules/properties/utils/property-field-rules.ts
 // Keep in sync when adding/removing property types or billing cycles.
-
 import { BillingCycle, PropertyType } from '@/types';
 
 export interface PropertyFieldConfig {
-  showBedrooms: boolean;
-  showBathrooms: boolean;
+  showNumberOfRooms: boolean;
+  showTotalRooms: boolean;
+  showHotelCategory: boolean;
   showParking: boolean;
   showFloor: boolean;
   showFurnishing: boolean;
@@ -23,8 +22,9 @@ export interface PropertyFieldConfig {
 
 export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = {
   RESIDENTIAL_HOUSE: {
-    showBedrooms: false,        // implied by residentialSubtype (SINGLE/DOUBLE)
-    showBathrooms: true,
+    showNumberOfRooms: true,
+    showTotalRooms: false,
+    showHotelCategory: false,
     showParking: true,
     showFloor: false,           // houses are ground-level
     showFurnishing: true,
@@ -35,10 +35,10 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     isHostel: false,
     isHotelLodge: false,
   },
-
   APARTMENT: {
-    showBedrooms: true,
-    showBathrooms: true,
+    showNumberOfRooms: true,
+    showTotalRooms: false,
+    showHotelCategory: false,
     showParking: true,
     showFloor: true,
     showFurnishing: true,
@@ -49,10 +49,10 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     isHostel: false,
     isHotelLodge: false,
   },
-
   AIRBNB: {
-    showBedrooms: true,
-    showBathrooms: true,
+    showNumberOfRooms: true,
+    showTotalRooms: false,
+    showHotelCategory: false,
     showParking: true,
     showFloor: true,
     showFurnishing: true,
@@ -63,10 +63,10 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     isHostel: false,
     isHotelLodge: false,
   },
-
   OFFICE_SPACE: {
-    showBedrooms: false,
-    showBathrooms: false,
+    showNumberOfRooms: true,
+    showTotalRooms: false,
+    showHotelCategory: false,
     showParking: true,
     showFloor: true,
     showFurnishing: true,
@@ -77,10 +77,10 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     isHostel: false,
     isHotelLodge: false,
   },
-
   BUSINESS_SPACE: {
-    showBedrooms: false,
-    showBathrooms: false,
+    showNumberOfRooms: true,
+    showTotalRooms: false,
+    showHotelCategory: false,
     showParking: true,
     showFloor: true,
     showFurnishing: false,
@@ -91,12 +91,12 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     isHostel: false,
     isHotelLodge: false,
   },
-
   HOSTEL: {
-    showBedrooms: false,
-    showBathrooms: false,
+    showNumberOfRooms: false,
+    showTotalRooms: true,
+    showHotelCategory: false,
     showParking: true,
-    showFloor: false,
+    showFloor: true,
     showFurnishing: false,
     showBillingCycle: false,    // billing cycle lives on each HostelRoom
     allowedBillingCycles: [],
@@ -105,12 +105,12 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     isHostel: true,
     isHotelLodge: false,
   },
-
   HOTEL_LODGE: {
-    showBedrooms: true,
-    showBathrooms: true,
+    showNumberOfRooms: true,
+    showTotalRooms: false,
+    showHotelCategory: true,
     showParking: true,
-    showFloor: false,
+    showFloor: true,
     showFurnishing: true,
     showBillingCycle: true,
     allowedBillingCycles: ['DAILY', 'MONTHLY'],

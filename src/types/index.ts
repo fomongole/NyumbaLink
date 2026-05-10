@@ -36,7 +36,6 @@ export interface ChangePasswordPayload {
 }
 
 // ─── District ────────────────────────────────────────────────────────────────
-// ─── District ────────────────────────────────────────────────────────────────
 export interface District {
   id: string;
   name: string;
@@ -103,7 +102,10 @@ export type PropertyType =
 /** Only set when type = RESIDENTIAL_HOUSE */
 export type ResidentialSubtype = 'SINGLE' | 'DOUBLE';
 
+export type HotelCategory = 'ORDINARY' | 'VIP' | 'VVIP';
+
 export type PropertyStatus = 'AVAILABLE' | 'RENTED';
+
 export type FurnishingStatus = 'FURNISHED' | 'SEMI_FURNISHED' | 'UNFURNISHED';
 
 /**
@@ -133,8 +135,9 @@ export interface Property {
   residentialSubtype?: ResidentialSubtype;
   price: number;
   billingCycle?: BillingCycle;
-  bedrooms: number;
-  bathrooms: number;
+  numberOfRooms: number;
+  totalRooms?: number | null;
+  hotelCategory?: HotelCategory | null;
   area: string;
   address?: string;
   latitude?: number;
@@ -164,8 +167,9 @@ export interface CreatePropertyPayload {
   residentialSubtype?: ResidentialSubtype;
   price: number;
   billingCycle?: BillingCycle;
-  bedrooms?: number;
-  bathrooms?: number;
+  numberOfRooms?: number;
+  totalRooms?: number;
+  hotelCategory?: HotelCategory;
   area: string;
   address?: string;
   latitude?: number;
@@ -189,7 +193,8 @@ export interface PropertyFilters {
   billingCycle?: BillingCycle;
   minPrice?: number;
   maxPrice?: number;
-  bedrooms?: number;
+  numberOfRooms?: number;
+  search?: string;
   lat?: number;
   lng?: number;
   radius?: number;
@@ -250,6 +255,8 @@ export interface HostelRoomStats {
   reserved: number;
   maintenance: number;
   occupancyRate: number;
+  capacityCap: number | null;
+  slotsRemaining: number | null;
 }
 
 // ─── Bookings ─────────────────────────────────────────────────────────────────

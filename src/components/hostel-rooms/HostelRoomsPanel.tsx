@@ -7,7 +7,6 @@ import {
   Plus, Pencil, Trash2, BedDouble,
   CheckCircle2, Clock, Wrench, XCircle,
 } from 'lucide-react';
-
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,7 +26,6 @@ import {
   AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-
 import HostelRoomFormSheet from './HostelRoomFormSheet';
 import { hostelRoomsApi } from '@/lib/api/hostel-rooms.api';
 import { HostelRoom, HostelRoomStatus } from '@/types';
@@ -114,12 +112,20 @@ export default function HostelRoomsPanel({ propertyId }: Props) {
     <>
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4">
+        <div className={`grid grid-cols-2 ${stats.capacityCap !== null ? 'sm:grid-cols-6' : 'sm:grid-cols-5'} gap-3 mb-4`}>
           <RoomStatPill label="Total" value={stats.total} color="text-gray-700" bg="bg-gray-100" />
           <RoomStatPill label="Available" value={stats.available} color="text-emerald-700" bg="bg-emerald-50" />
           <RoomStatPill label="Occupied" value={stats.occupied} color="text-blue-700" bg="bg-blue-50" />
           <RoomStatPill label="Reserved" value={stats.reserved} color="text-amber-700" bg="bg-amber-50" />
           <RoomStatPill label="Occupancy" value={`${stats.occupancyRate}%`} color="text-purple-700" bg="bg-purple-50" />
+          {stats.capacityCap !== null && (
+            <RoomStatPill
+              label="Capacity"
+              value={`${stats.total} / ${stats.capacityCap}`}
+              color="text-indigo-700"
+              bg="bg-indigo-50"
+            />
+          )}
         </div>
       )}
 
@@ -139,7 +145,6 @@ export default function HostelRoomsPanel({ propertyId }: Props) {
             Add Room
           </Button>
         </CardHeader>
-
         <CardContent>
           {isLoading ? (
             <div className="space-y-2">

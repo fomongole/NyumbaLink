@@ -75,14 +75,15 @@ export const propertySchema = z.object({
   billingCycle: z
     .enum(['DAILY', 'MONTHLY', 'QUARTERLY', 'FOUR_MONTHS', 'BIANNUAL', 'ANNUAL'] as const)
     .optional(),
-  bedrooms: z.preprocess(
+  numberOfRooms: z.preprocess(
     (v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)),
     z.number().min(1).optional(),
   ),
-  bathrooms: z.preprocess(
+  totalRooms: z.preprocess(
     (v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)),
     z.number().min(1).optional(),
   ),
+  hotelCategory: z.enum(['ORDINARY', 'VIP', 'VVIP']).optional(),
   securityDeposit: z.preprocess(
     (v) => (v === '' || Number.isNaN(Number(v)) ? undefined : Number(v)),
     z.number().min(0).optional(),

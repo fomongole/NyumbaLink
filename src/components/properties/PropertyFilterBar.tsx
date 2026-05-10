@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Search, X, SlidersHorizontal, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -42,7 +42,7 @@ const BILLING_CYCLES: { value: BillingCycle; label: string }[] = [
   { value: 'ANNUAL',      label: 'Annual' },
 ];
 
-const BEDROOMS = [1, 2, 3, 4, 5];
+const ROOM_COUNTS = [1, 2, 3, 4, 5];
 const UNSET = '__ALL__';
 
 export default function PropertyFilterBar({ filters, onChange, onReset }: Props) {
@@ -51,31 +51,38 @@ export default function PropertyFilterBar({ filters, onChange, onReset }: Props)
     queryFn: districtsApi.getAll,
   });
 
+  const [searchInput, setSearchInput] = useState(filters.search ?? '');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onChange({ ...filters, search: searchInput || undefined });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   const [advancedOpen, setAdvancedOpen] = useState(
-    !!(filters.billingCycle || filters.minPrice || filters.maxPrice || filters.bedrooms),
+    !!(filters.billingCycle || filters.minPrice || filters.maxPrice || filters.numberOfRooms),
   );
 
   const advancedCount = [
-    filters.billingCycle, filters.minPrice, filters.maxPrice, filters.bedrooms,
+    filters.billingCycle, filters.minPrice, filters.maxPrice, filters.numberOfRooms,
   ].filter(Boolean).length;
 
   const hasAnyActiveFilter =
     filters.search || filters.districtId || filters.type || filters.status ||
-    filters.billingCycle || filters.minPrice || filters.maxPrice || filters.bedrooms;
+    filters.billingCycle || filters.minPrice || filters.maxPrice || filters.numberOfRooms;
 
   return (
     <div className="space-y-2">
-
       {/* ── Row 1: Primary filters ── */}
       <div className="flex flex-wrap gap-2 items-center">
-
         <div className="relative w-56">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
           <input
             placeholder="Search title or area..."
             className="pl-8 h-9 text-sm w-full rounded-md border border-input bg-background px-3 py-1 shadow-sm outline-none focus:ring-1 focus:ring-ring placeholder:text-muted-foreground"
-            value={filters.search ?? ''}
-            onChange={(e) => onChange({ ...filters, search: e.target.value })}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
           />
         </div>
 
@@ -152,7 +159,10 @@ export default function PropertyFilterBar({ filters, onChange, onReset }: Props)
           <Button
             variant="ghost"
             size="sm"
-            onClick={onReset}
+            onClick={() => {
+              setSearchInput('');
+              onReset();
+            }}
             className="h-9 gap-1.5 text-sm text-gray-500"
           >
             <X className="h-3.5 w-3.5" />
@@ -164,7 +174,6 @@ export default function PropertyFilterBar({ filters, onChange, onReset }: Props)
       {/* ── Row 2: Advanced filters (collapsible) ── */}
       {advancedOpen && (
         <div className="flex flex-wrap gap-2 items-center pt-2.5 border-t border-gray-100">
-
           <Select
             value={filters.billingCycle ?? UNSET}
             onValueChange={(v) =>
@@ -183,19 +192,19 @@ export default function PropertyFilterBar({ filters, onChange, onReset }: Props)
           </Select>
 
           <Select
-            value={filters.bedrooms?.toString() ?? UNSET}
+            value={filters.numberOfRooms?.toString() ?? UNSET}
             onValueChange={(v) =>
-              onChange({ ...filters, bedrooms: v === UNSET ? undefined : Number(v) })
+              onChange({ ...filters, numberOfRooms: v === UNSET ? undefined : Number(v) })
             }
           >
             <SelectTrigger className="h-9 w-32 text-sm">
-              <SelectValue placeholder="Any Beds" />
+              <SelectValue placeholder="Any Rooms" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={UNSET}>Any Beds</SelectItem>
-              {BEDROOMS.map((b) => (
+              <SelectItem value={UNSET}>Any Rooms</SelectItem>
+              {ROOM_COUNTS.map((b) => (
                 <SelectItem key={b} value={b.toString()}>
-                  {b} {b === 1 ? 'Bedroom' : 'Bedrooms'}
+                  {b} {b === 1 ? 'Room' : 'Rooms'}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -232,7 +241,6 @@ export default function PropertyFilterBar({ filters, onChange, onReset }: Props)
               }
             />
           </div>
-
         </div>
       )}
     </div>

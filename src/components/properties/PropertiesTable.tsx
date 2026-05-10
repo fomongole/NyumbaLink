@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
@@ -9,7 +9,6 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,7 +33,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-
 import PropertyFormSheet from './PropertyFormSheet';
 import ImageUploadManager from './ImageUploadManager';
 import PropertyFilterBar from './PropertyFilterBar';
@@ -66,9 +64,10 @@ const DEFAULT_FILTERS: PropertyFilters & { search?: string } = {};
 function exportToCsv(properties: Property[]) {
   const headers = [
     'Title', 'Area', 'District', 'Type', 'Price (UGX)', 'Billing',
-    'Bedrooms', 'Bathrooms', 'Status', 'Furnishing',
+    'Rooms', 'Status', 'Furnishing',
     'Contact', 'Phone', 'Role', 'Views', 'Enquiries',
   ];
+
   const rows = properties.map((p) => [
     p.title,
     p.area,
@@ -76,8 +75,7 @@ function exportToCsv(properties: Property[]) {
     TYPE_LABELS[p.type] ?? p.type,
     p.price,
     p.billingCycle ? BILLING_LABELS[p.billingCycle] : '',
-    p.bedrooms,
-    p.bathrooms,
+    p.numberOfRooms,
     p.status,
     p.furnishing ?? '',
     p.contact.name,
@@ -103,20 +101,25 @@ function exportToCsv(properties: Property[]) {
 export default function PropertiesTable() {
   const queryClient = useQueryClient();
   const [filters, setFilters] = useState<PropertyFilters & { search?: string }>(DEFAULT_FILTERS);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 15;
+
   const [formOpen, setFormOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [imagesOpen, setImagesOpen] = useState(false);
   const [selected, setSelected] = useState<Property | null>(null);
 
   const serverFilters: PropertyFilters = {
-    districtId:   filters.districtId,
-    type:         filters.type,
-    status:       filters.status,
-    billingCycle: filters.billingCycle,
-    minPrice:     filters.minPrice,
-    maxPrice:     filters.maxPrice,
-    bedrooms:     filters.bedrooms,
-    limit: 100,
+    districtId:    filters.districtId,
+    type:          filters.type,
+    status:        filters.status,
+    billingCycle:  filters.billingCycle,
+    minPrice:      filters.minPrice,
+    maxPrice:      filters.maxPrice,
+    numberOfRooms: filters.numberOfRooms,
+    search:        filters.search,
+    page,
+    limit: PAGE_SIZE,
   };
 
   const { data, isLoading } = useQuery({
@@ -124,17 +127,7 @@ export default function PropertiesTable() {
     queryFn: () => propertiesApi.getAll(serverFilters),
   });
 
-  const properties = useMemo(() => {
-    const all = data?.data ?? [];
-    if (!filters.search) return all;
-    const q = filters.search.toLowerCase();
-    return all.filter(
-      (p) =>
-        p.title.toLowerCase().includes(q) ||
-        p.area.toLowerCase().includes(q) ||
-        p.contact.name.toLowerCase().includes(q),
-    );
-  }, [data, filters.search]);
+  const properties = data?.data ?? [];
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => propertiesApi.delete(id),
@@ -161,6 +154,11 @@ export default function PropertiesTable() {
   const handleEdit = (p: Property) => { setSelected(p); setFormOpen(true); };
   const handleDelete = (p: Property) => { setSelected(p); setDeleteOpen(true); };
   const handleImages = (p: Property) => { setSelected(p); setImagesOpen(true); };
+
+  const handleFiltersChange = (newFilters: typeof filters) => {
+    setPage(1);
+    setFilters(newFilters);
+  };
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -195,12 +193,14 @@ export default function PropertiesTable() {
             </Button>
           </div>
         </CardHeader>
-
         <CardContent className="space-y-4">
           <PropertyFilterBar
             filters={filters}
-            onChange={setFilters}
-            onReset={() => setFilters(DEFAULT_FILTERS)}
+            onChange={handleFiltersChange}
+            onReset={() => {
+              setPage(1);
+              setFilters(DEFAULT_FILTERS);
+            }}
           />
 
           {isLoading ? (
@@ -241,7 +241,6 @@ export default function PropertiesTable() {
                       property.images.find((i) => i.isPrimary) ?? property.images[0];
                     return (
                       <TableRow key={property.id}>
-
                         {/* Property */}
                         <TableCell>
                           <div className="flex items-center gap-3">
@@ -271,29 +270,24 @@ export default function PropertiesTable() {
                             </div>
                           </div>
                         </TableCell>
-
                         {/* Type */}
                         <TableCell>
                           <Badge variant="outline" className="text-xs">
                             {TYPE_LABELS[property.type] ?? property.type}
                           </Badge>
                         </TableCell>
-
                         {/* District */}
                         <TableCell className="text-sm">{property.district.name}</TableCell>
-
                         {/* Price */}
                         <TableCell className="text-sm font-medium">
                           UGX {Number(property.price).toLocaleString()}
                         </TableCell>
-
                         {/* Billing */}
                         <TableCell className="text-sm text-gray-600">
                           {property.billingCycle
                             ? BILLING_LABELS[property.billingCycle]
                             : <span className="text-gray-400">—</span>}
                         </TableCell>
-
                         {/* Contact */}
                         <TableCell className="text-sm">
                           <div>
@@ -301,7 +295,6 @@ export default function PropertiesTable() {
                             <p className="text-xs text-gray-500">{property.contact.role}</p>
                           </div>
                         </TableCell>
-
                         {/* Status */}
                         <TableCell>
                           <Badge
@@ -310,21 +303,17 @@ export default function PropertiesTable() {
                             {property.status === 'AVAILABLE' ? 'Available' : 'Rented Out'}
                           </Badge>
                         </TableCell>
-
                         {/* Views */}
                         <TableCell className="text-sm text-gray-500">
                           {property.viewCount}
                         </TableCell>
-
                         {/* Images */}
                         <TableCell className="text-sm text-gray-500">
                           {property.images.length}/8
                         </TableCell>
-
                         {/* Actions — View (primary) + ⋯ dropdown (secondary) */}
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
-
                             {/* Primary: View */}
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -338,7 +327,6 @@ export default function PropertiesTable() {
                                 View details
                               </TooltipContent>
                             </Tooltip>
-
                             {/* Secondary: ⋯ dropdown */}
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -347,7 +335,6 @@ export default function PropertiesTable() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-48">
-
                                 <DropdownMenuItem
                                   onClick={() => handleImages(property)}
                                   className="gap-2 cursor-pointer"
@@ -358,7 +345,6 @@ export default function PropertiesTable() {
                                     {property.images.length}/8
                                   </span>
                                 </DropdownMenuItem>
-
                                 <DropdownMenuItem
                                   onClick={() => handleEdit(property)}
                                   className="gap-2 cursor-pointer"
@@ -366,7 +352,6 @@ export default function PropertiesTable() {
                                   <Pencil className="h-3.5 w-3.5 text-gray-500" />
                                   Edit property
                                 </DropdownMenuItem>
-
                                 <DropdownMenuItem
                                   onClick={() => toggleMutation.mutate(property.id)}
                                   disabled={toggleMutation.isPending}
@@ -384,9 +369,7 @@ export default function PropertiesTable() {
                                     </>
                                   )}
                                 </DropdownMenuItem>
-
                                 <DropdownMenuSeparator />
-
                                 <DropdownMenuItem
                                   onClick={() => handleDelete(property)}
                                   className="gap-2 cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
@@ -394,18 +377,31 @@ export default function PropertiesTable() {
                                   <Trash2 className="h-3.5 w-3.5" />
                                   Delete property
                                 </DropdownMenuItem>
-
                               </DropdownMenuContent>
                             </DropdownMenu>
-
                           </div>
                         </TableCell>
-
                       </TableRow>
                     );
                   })}
                 </TableBody>
               </Table>
+            </div>
+          )}
+          {data && data.meta.totalPages > 1 && (
+            <div className="flex items-center justify-between pt-3 border-t">
+              <p className="text-sm text-gray-500">
+                Showing {((page - 1) * PAGE_SIZE) + 1}–{Math.min(page * PAGE_SIZE, data.meta.total)} of {data.meta.total} properties
+              </p>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+                  ← Prev
+                </Button>
+                <span className="text-sm text-gray-500">Page {page} of {data.meta.totalPages}</span>
+                <Button variant="outline" size="sm" disabled={page >= data.meta.totalPages} onClick={() => setPage(p => p + 1)}>
+                  Next →
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
