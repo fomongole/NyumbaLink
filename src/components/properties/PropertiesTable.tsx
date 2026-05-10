@@ -309,7 +309,7 @@ export default function PropertiesTable() {
                         </TableCell>
                         {/* Images */}
                         <TableCell className="text-sm text-gray-500">
-                          {property.images.length}/8
+                          {property.images.length}/4
                         </TableCell>
                         {/* Actions — View (primary) + ⋯ dropdown (secondary) */}
                         <TableCell className="text-right">
@@ -342,7 +342,7 @@ export default function PropertiesTable() {
                                   <Images className="h-3.5 w-3.5 text-gray-500" />
                                   Manage images
                                   <span className="ml-auto text-xs text-gray-400">
-                                    {property.images.length}/8
+                                    {property.images.length}/4
                                   </span>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem

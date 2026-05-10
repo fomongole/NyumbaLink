@@ -163,11 +163,11 @@ export default function PropertyDetailPage({
             <span className="text-gray-700 font-medium truncate">{property.title}</span>
           </nav>
 
-          {/* Action buttons — unchanged */}
+          {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setImagesOpen(true)}>
               <Images className="h-4 w-4 mr-1.5" />
-              Images ({property.images.length}/8)
+              Images ({property.images.length}/4)
             </Button>
 
             {!isHostel && (
