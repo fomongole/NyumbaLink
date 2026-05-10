@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -24,6 +24,7 @@ import { contactsApi } from '@/lib/api/contacts.api';
 import { districtsApi } from '@/lib/api/districts.api';
 import { getFieldConfig } from '@/lib/property-field-rules';
 import { BillingCycle, Property } from '@/types';
+import ImageUploadManager from './ImageUploadManager';
 
 const PROPERTY_TYPES = [
   { value: 'RESIDENTIAL_HOUSE', label: 'Residential House' },
@@ -66,6 +67,7 @@ interface Props {
 export default function PropertyFormSheet({ open, onClose, property }: Props) {
   const isEditing = !!property;
   const queryClient = useQueryClient();
+  const [createdProperty, setCreatedProperty] = useState<Property | null>(null);
 
   const { data: contactsResponse } = useQuery({
     queryKey: ['contacts'],
@@ -134,15 +136,29 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
     }
   }, [property, reset]);
 
+  // Reset internal tracking phase when sheet closes entirely
+  useEffect(() => {
+    if (!open) {
+      setCreatedProperty(null);
+      reset();
+    }
+  }, [open, reset]);
+
   const mutation = useMutation({
     mutationFn: (data: PropertyFormData) =>
       isEditing
         ? propertiesApi.update(property!.id, data)
         : propertiesApi.create(data),
-    onSuccess: () => {
+    onSuccess: (savedProperty) => {
       queryClient.invalidateQueries({ queryKey: ['properties'] });
       toast.success(isEditing ? 'Property updated!' : 'Property created!');
-      onClose();
+      
+      if (!isEditing && savedProperty?.id) {
+        // Start Phase 2: Image Upload
+        setCreatedProperty(savedProperty);
+      } else {
+        onClose();
+      }
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message ?? 'Something went wrong. Please try again.';
@@ -165,361 +181,397 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
   return (
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent className="!max-w-[800px] !w-[90vw] flex flex-col p-0">
-        {/* ── Non-scrolling header ── */}
-        <div className="px-6 sm:px-8 pt-6 pb-4 border-b shrink-0">
-          <SheetHeader>
-            <SheetTitle>{isEditing ? 'Edit Property' : 'Add New Property'}</SheetTitle>
-            <SheetDescription>
-              {isEditing
-                ? 'Update the property details below.'
-                : 'Fill in all required details to list a new property.'}
-            </SheetDescription>
-          </SheetHeader>
-        </div>
+        
+        {createdProperty ? (
+          /* ── PHASE 2: IMAGE UPLOAD ── */
+          <>
+            <div className="px-6 sm:px-8 pt-6 pb-4 border-b shrink-0">
+              <SheetHeader>
+                <SheetTitle>Step 2: Upload Images</SheetTitle>
+                <SheetDescription>
+                  Property created successfully! Add up to 4 images for <b>{createdProperty.title}</b>. You can manage these later.
+                </SheetDescription>
+              </SheetHeader>
+            </div>
 
-        {/* ── Scrollable form body ── */}
-        <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-5">
-          <form
-            id="property-form"
-            onSubmit={handleSubmit((d) => mutation.mutate(d), () =>
-              toast.error('Please fill in all required fields before submitting.'),
-            )}
-            className="space-y-4"
-          >
-            <SectionLabel>Basic Information</SectionLabel>
-
-            <div className="space-y-1.5">
-              <Label>Title <span className="text-destructive">*</span></Label>
-              <Input
-                placeholder="e.g. Spacious 2BR Apartment in Kololo"
-                {...register('title')}
-                className={errors.title ? 'border-destructive' : ''}
+            <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-5">
+              <ImageUploadManager
+                open={true}
+                onClose={() => {}} // Controlled by outer Done button
+                property={createdProperty}
+                inline={true}
               />
-              <FieldError message={errors.title?.message} />
             </div>
 
-            <div className="space-y-1.5">
-              <Label>Description <span className="text-destructive">*</span></Label>
-              <Textarea
-                placeholder="Describe the property in detail..."
-                rows={4}
-                {...register('description')}
-                className={errors.description ? 'border-destructive' : ''}
-              />
-              <FieldError message={errors.description?.message} />
+            <div className="shrink-0 border-t bg-white px-6 sm:px-8 py-4">
+              <Button
+                className="w-full"
+                onClick={() => {
+                  setCreatedProperty(null);
+                  onClose();
+                }}
+              >
+                Finish & Close
+              </Button>
+            </div>
+          </>
+        ) : (
+          /* ── PHASE 1: FORM ── */
+          <>
+            <div className="px-6 sm:px-8 pt-6 pb-4 border-b shrink-0">
+              <SheetHeader>
+                <SheetTitle>{isEditing ? 'Edit Property' : 'Add New Property'}</SheetTitle>
+                <SheetDescription>
+                  {isEditing
+                    ? 'Update the property details below.'
+                    : 'Fill in all required details to list a new property.'}
+                </SheetDescription>
+              </SheetHeader>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>Property Type <span className="text-destructive">*</span></Label>
-                <Select
-                  value={watch('type') ?? ''}
-                  onValueChange={(v) => setVal('type', v as PropertyFormData['type'])}
-                >
-                  <SelectTrigger className={errors.type ? 'border-destructive' : ''}>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PROPERTY_TYPES.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FieldError message={errors.type?.message} />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Price (UGX) <span className="text-destructive">*</span></Label>
-                <Input
-                  type="number"
-                  placeholder="e.g. 800000"
-                  {...register('price')}
-                  className={errors.price ? 'border-destructive' : ''}
-                />
-                <FieldError message={errors.price?.message} />
-              </div>
-            </div>
-
-            {fieldConfig?.showResidentialSubtype && (
-              <div className="space-y-1.5">
-                <Label>House Type <span className="text-destructive">*</span></Label>
-                <Select
-                  value={watch('residentialSubtype') ?? ''}
-                  onValueChange={(v) => setVal('residentialSubtype', v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Single or Double?" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {RESIDENTIAL_SUBTYPES.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {fieldConfig?.showBillingCycle && (
-              <div className="space-y-1.5">
-                <Label>Billing Period <span className="text-destructive">*</span></Label>
-                <Select
-                  value={watch('billingCycle') ?? ''}
-                  onValueChange={(v) => setVal('billingCycle', v)}
-                >
-                  <SelectTrigger className={errors.billingCycle ? 'border-destructive' : ''}>
-                    <SelectValue placeholder="How often is rent paid?" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fieldConfig.allowedBillingCycles.map((c) => (
-                      <SelectItem key={c} value={c}>{BILLING_CYCLE_LABELS[c]}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-[10px] text-gray-500">The price above is per this billing period.</p>
-                <FieldError message={errors.billingCycle?.message} />
-              </div>
-            )}
-
-            {fieldConfig?.showNumberOfRooms && (
-              <div className="space-y-1.5">
-                <Label>Number of Rooms</Label>
-                <Input type="number" min={1} placeholder="e.g. 3" {...register('numberOfRooms')} />
-              </div>
-            )}
-
-            {fieldConfig?.isHostel && (
-              <>
-                <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm">
-                  <Info className="h-4 w-4 mt-0.5 shrink-0" />
-                  <p>
-                    After saving, you can add individual rooms with their own prices and billing
-                    periods from the property detail page.
-                  </p>
-                </div>
-                {fieldConfig?.showTotalRooms && (
-                  <div className="space-y-1.5">
-                    <Label>Total Rooms (capacity cap)</Label>
-                    <Input type="number" min={1} placeholder="e.g. 20 — leave empty for no limit" {...register('totalRooms')} />
-                    <p className="text-xs text-gray-500">Rooms added to this hostel cannot exceed this number.</p>
-                  </div>
+            <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-5">
+              <form
+                id="property-form"
+                onSubmit={handleSubmit((d) => mutation.mutate(d), () =>
+                  toast.error('Please fill in all required fields before submitting.'),
                 )}
-              </>
-            )}
+                className="space-y-4"
+              >
+                <SectionLabel>Basic Information</SectionLabel>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>Area / Neighbourhood <span className="text-destructive">*</span></Label>
-                <Input
-                  placeholder="e.g. Kololo"
-                  {...register('area')}
-                  className={errors.area ? 'border-destructive' : ''}
-                />
-                <FieldError message={errors.area?.message} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Street Address</Label>
-                <Input placeholder="e.g. Plot 23, Acacia Ave" {...register('address')} />
-              </div>
-            </div>
+                <div className="space-y-1.5">
+                  <Label>Title <span className="text-destructive">*</span></Label>
+                  <Input
+                    placeholder="e.g. Spacious 2BR Apartment in Kololo"
+                    {...register('title')}
+                    className={errors.title ? 'border-destructive' : ''}
+                  />
+                  <FieldError message={errors.title?.message} />
+                </div>
 
-            <SectionLabel>GPS Coordinates</SectionLabel>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>Latitude</Label>
-                <Input type="number" step="any" placeholder="e.g. 0.347596" {...register('latitude')} />
-                <p className="text-[10px] text-gray-500">Copy/paste from Google Maps</p>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Longitude</Label>
-                <Input type="number" step="any" placeholder="e.g. 32.582520" {...register('longitude')} />
-              </div>
-            </div>
+                <div className="space-y-1.5">
+                  <Label>Description <span className="text-destructive">*</span></Label>
+                  <Textarea
+                    placeholder="Describe the property in detail..."
+                    rows={4}
+                    {...register('description')}
+                    className={errors.description ? 'border-destructive' : ''}
+                  />
+                  <FieldError message={errors.description?.message} />
+                </div>
 
-            <SectionLabel>District & Contact</SectionLabel>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>District <span className="text-destructive">*</span></Label>
-                <Select
-                  value={watch('districtId') ?? ''}
-                  onValueChange={(v) => setVal('districtId', v)}
-                >
-                  <SelectTrigger className={errors.districtId ? 'border-destructive' : ''}>
-                    <SelectValue placeholder="Select district" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {districts.map((d) => (
-                      <SelectItem key={d.id} value={d.id}>
-                        {d.name} — {d.region}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FieldError message={errors.districtId?.message} />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label>Owner / Agent <span className="text-destructive">*</span></Label>
-                <Select
-                  value={watch('contactId') ?? ''}
-                  onValueChange={(v) => setVal('contactId', v)}
-                >
-                  <SelectTrigger className={errors.contactId ? 'border-destructive' : ''}>
-                    <SelectValue placeholder="Select contact" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {contacts.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name} ({c.role}) — {c.phone}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FieldError message={errors.contactId?.message} />
-              </div>
-            </div>
-
-            {(fieldConfig?.showFurnishing ||
-              fieldConfig?.showHotelCategory ||
-              fieldConfig?.showSecurityDeposit ||
-              fieldConfig?.showFloor ||
-              fieldConfig?.showParking) && (
-              <>
-                <SectionLabel>Additional Details</SectionLabel>
-
-                {fieldConfig?.showFurnishing && (
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label>Furnishing</Label>
+                    <Label>Property Type <span className="text-destructive">*</span></Label>
                     <Select
-                      value={watch('furnishing') ?? UNSET}
-                      onValueChange={(v) => setVal('furnishing', v === UNSET ? undefined : v)}
+                      value={watch('type') ?? ''}
+                      onValueChange={(v) => setVal('type', v as PropertyFormData['type'])}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select furnishing" />
+                      <SelectTrigger className={errors.type ? 'border-destructive' : ''}>
+                        <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={UNSET}>Not specified</SelectItem>
-                        {FURNISHING_OPTIONS.map((f) => (
-                          <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                        {PROPERTY_TYPES.map((t) => (
+                          <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FieldError message={errors.type?.message} />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label>Price (UGX) <span className="text-destructive">*</span></Label>
+                    <Input
+                      type="number"
+                      placeholder="e.g. 800000"
+                      {...register('price')}
+                      className={errors.price ? 'border-destructive' : ''}
+                    />
+                    <FieldError message={errors.price?.message} />
+                  </div>
+                </div>
+
+                {fieldConfig?.showResidentialSubtype && (
+                  <div className="space-y-1.5">
+                    <Label>House Type <span className="text-destructive">*</span></Label>
+                    <Select
+                      value={watch('residentialSubtype') ?? ''}
+                      onValueChange={(v) => setVal('residentialSubtype', v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Single or Double?" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {RESIDENTIAL_SUBTYPES.map((s) => (
+                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                 )}
 
-                {fieldConfig?.showHotelCategory && (
+                {fieldConfig?.showBillingCycle && (
                   <div className="space-y-1.5">
-                    <Label>Category</Label>
+                    <Label>Billing Period <span className="text-destructive">*</span></Label>
                     <Select
-                      value={watch('hotelCategory') ?? UNSET}
-                      onValueChange={(v) => setVal('hotelCategory', v === UNSET ? undefined : v)}
+                      value={watch('billingCycle') ?? ''}
+                      onValueChange={(v) => setVal('billingCycle', v)}
                     >
-                      <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                      <SelectTrigger className={errors.billingCycle ? 'border-destructive' : ''}>
+                        <SelectValue placeholder="How often is rent paid?" />
+                      </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value={UNSET}>Not specified</SelectItem>
-                        <SelectItem value="ORDINARY">Ordinary</SelectItem>
-                        <SelectItem value="VIP">VIP</SelectItem>
-                        <SelectItem value="VVIP">VVIP</SelectItem>
+                        {fieldConfig.allowedBillingCycles.map((c) => (
+                          <SelectItem key={c} value={c}>{BILLING_CYCLE_LABELS[c]}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
+                    <p className="text-[10px] text-gray-500">The price above is per this billing period.</p>
+                    <FieldError message={errors.billingCycle?.message} />
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  {fieldConfig?.showSecurityDeposit && (
-                    <div className="space-y-1.5">
-                      <Label>Security Deposit (UGX)</Label>
-                      <Input type="number" placeholder="e.g. 500000" {...register('securityDeposit')} />
-                    </div>
-                  )}
+                {fieldConfig?.showNumberOfRooms && (
+                  <div className="space-y-1.5">
+                    <Label>Number of Rooms</Label>
+                    <Input type="number" min={1} placeholder="e.g. 3" {...register('numberOfRooms')} />
+                  </div>
+                )}
 
-                  {fieldConfig?.showFloor && (
-                    <div className="space-y-1.5">
-                      <Label>Floor / Level</Label>
-                      <Input type="number" min={0} placeholder="0 = ground" {...register('floor')} />
+                {fieldConfig?.isHostel && (
+                  <>
+                    <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm">
+                      <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                      <p>
+                        After saving, you can add individual rooms with their own prices and billing
+                        periods from the property detail page.
+                      </p>
                     </div>
-                  )}
-                </div>
+                    {fieldConfig?.showTotalRooms && (
+                      <div className="space-y-1.5">
+                        <Label>Total Rooms (capacity cap)</Label>
+                        <Input type="number" min={1} placeholder="e.g. 20 — leave empty for no limit" {...register('totalRooms')} />
+                        <p className="text-xs text-gray-500">Rooms added to this hostel cannot exceed this number.</p>
+                      </div>
+                    )}
+                  </>
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <Label>Available From</Label>
-                    <Input type="date" {...register('availableFrom')} />
+                    <Label>Area / Neighbourhood <span className="text-destructive">*</span></Label>
+                    <Input
+                      placeholder="e.g. Kololo"
+                      {...register('area')}
+                      className={errors.area ? 'border-destructive' : ''}
+                    />
+                    <FieldError message={errors.area?.message} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Street Address</Label>
+                    <Input placeholder="e.g. Plot 23, Acacia Ave" {...register('address')} />
+                  </div>
+                </div>
+
+                <SectionLabel>GPS Coordinates</SectionLabel>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Latitude</Label>
+                    <Input type="number" step="any" placeholder="e.g. 0.347596" {...register('latitude')} />
+                    <p className="text-[10px] text-gray-500">Copy/paste from Google Maps</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Longitude</Label>
+                    <Input type="number" step="any" placeholder="e.g. 32.582520" {...register('longitude')} />
+                  </div>
+                </div>
+
+                <SectionLabel>District & Contact</SectionLabel>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>District <span className="text-destructive">*</span></Label>
+                    <Select
+                      value={watch('districtId') ?? ''}
+                      onValueChange={(v) => setVal('districtId', v)}
+                    >
+                      <SelectTrigger className={errors.districtId ? 'border-destructive' : ''}>
+                        <SelectValue placeholder="Select district" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {districts.map((d) => (
+                          <SelectItem key={d.id} value={d.id}>
+                            {d.name} — {d.region}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FieldError message={errors.districtId?.message} />
                   </div>
 
-                  {fieldConfig?.showParking && (
-                    <div className="space-y-1.5">
-                      <Label>Parking Available</Label>
-                      <div className="flex items-center gap-3 h-9 px-3 border rounded-md bg-white">
-                        <input
-                          type="checkbox"
-                          id="parkingAvailable"
-                          className="h-4 w-4 accent-primary"
-                          checked={watch('parkingAvailable') ?? false}
-                          onChange={(e) => setValue('parkingAvailable', e.target.checked)}
-                        />
-                        <label htmlFor="parkingAvailable" className="text-sm text-gray-700 cursor-pointer">
-                          Yes, parking is available
-                        </label>
-                      </div>
-                    </div>
-                  )}
+                  <div className="space-y-1.5">
+                    <Label>Owner / Agent <span className="text-destructive">*</span></Label>
+                    <Select
+                      value={watch('contactId') ?? ''}
+                      onValueChange={(v) => setVal('contactId', v)}
+                    >
+                      <SelectTrigger className={errors.contactId ? 'border-destructive' : ''}>
+                        <SelectValue placeholder="Select contact" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {contacts.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {c.name} ({c.role}) — {c.phone}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FieldError message={errors.contactId?.message} />
+                  </div>
                 </div>
-              </>
-            )}
 
-            <SectionLabel>Amenities</SectionLabel>
-            <div className="space-y-1.5">
-              <Label>Amenities</Label>
-              <Input
-                placeholder="e.g. Water, Electricity, WiFi, Security"
-                onChange={(e) =>
-                  setValue(
-                    'amenities',
-                    e.target.value.split(',').map((a) => a.trim()).filter(Boolean),
-                  )
-                }
-                defaultValue={property?.amenities?.join(', ') ?? ''}
-              />
-              <p className="text-xs text-gray-500">Separate each amenity with a comma</p>
+                {(fieldConfig?.showFurnishing ||
+                  fieldConfig?.showHotelCategory ||
+                  fieldConfig?.showSecurityDeposit ||
+                  fieldConfig?.showFloor ||
+                  fieldConfig?.showParking) && (
+                  <>
+                    <SectionLabel>Additional Details</SectionLabel>
+
+                    {fieldConfig?.showFurnishing && (
+                      <div className="space-y-1.5">
+                        <Label>Furnishing</Label>
+                        <Select
+                          value={watch('furnishing') ?? UNSET}
+                          onValueChange={(v) => setVal('furnishing', v === UNSET ? undefined : v)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select furnishing" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={UNSET}>Not specified</SelectItem>
+                            {FURNISHING_OPTIONS.map((f) => (
+                              <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    {fieldConfig?.showHotelCategory && (
+                      <div className="space-y-1.5">
+                        <Label>Category</Label>
+                        <Select
+                          value={watch('hotelCategory') ?? UNSET}
+                          onValueChange={(v) => setVal('hotelCategory', v === UNSET ? undefined : v)}
+                        >
+                          <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={UNSET}>Not specified</SelectItem>
+                            <SelectItem value="ORDINARY">Ordinary</SelectItem>
+                            <SelectItem value="VIP">VIP</SelectItem>
+                            <SelectItem value="VVIP">VVIP</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {fieldConfig?.showSecurityDeposit && (
+                        <div className="space-y-1.5">
+                          <Label>Security Deposit (UGX)</Label>
+                          <Input type="number" placeholder="e.g. 500000" {...register('securityDeposit')} />
+                        </div>
+                      )}
+
+                      {fieldConfig?.showFloor && (
+                        <div className="space-y-1.5">
+                          <Label>Floor / Level</Label>
+                          <Input type="number" min={0} placeholder="0 = ground" {...register('floor')} />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label>Available From</Label>
+                        <Input type="date" {...register('availableFrom')} />
+                      </div>
+
+                      {fieldConfig?.showParking && (
+                        <div className="space-y-1.5">
+                          <Label>Parking Available</Label>
+                          <div className="flex items-center gap-3 h-9 px-3 border rounded-md bg-white">
+                            <input
+                              type="checkbox"
+                              id="parkingAvailable"
+                              className="h-4 w-4 accent-primary"
+                              checked={watch('parkingAvailable') ?? false}
+                              onChange={(e) => setValue('parkingAvailable', e.target.checked)}
+                            />
+                            <label htmlFor="parkingAvailable" className="text-sm text-gray-700 cursor-pointer">
+                              Yes, parking is available
+                            </label>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                <SectionLabel>Amenities</SectionLabel>
+                <div className="space-y-1.5">
+                  <Label>Amenities</Label>
+                  <Input
+                    placeholder="e.g. Water, Electricity, WiFi, Security"
+                    onChange={(e) =>
+                      setValue(
+                        'amenities',
+                        e.target.value.split(',').map((a) => a.trim()).filter(Boolean),
+                      )
+                    }
+                    defaultValue={property?.amenities?.join(', ') ?? ''}
+                  />
+                  <p className="text-xs text-gray-500">Separate each amenity with a comma</p>
+                </div>
+
+                {isSubmitted && Object.keys(errors).length > 0 && (
+                  <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                    <p className="font-medium mb-1">Please fix the following before submitting:</p>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      {errors.title       && <li>Title — {errors.title.message}</li>}
+                      {errors.description && <li>Description — {errors.description.message}</li>}
+                      {errors.type        && <li>Property Type — {errors.type.message}</li>}
+                      {errors.price       && <li>Price — {errors.price.message}</li>}
+                      {errors.area        && <li>Area — {errors.area.message}</li>}
+                      {errors.districtId  && <li>District — {errors.districtId.message}</li>}
+                      {errors.contactId   && <li>Owner / Agent — {errors.contactId.message}</li>}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="h-2" />
+              </form>
             </div>
 
-            {isSubmitted && Object.keys(errors).length > 0 && (
-              <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-                <p className="font-medium mb-1">Please fix the following before submitting:</p>
-                <ul className="list-disc list-inside space-y-0.5">
-                  {errors.title       && <li>Title — {errors.title.message}</li>}
-                  {errors.description && <li>Description — {errors.description.message}</li>}
-                  {errors.type        && <li>Property Type — {errors.type.message}</li>}
-                  {errors.price       && <li>Price — {errors.price.message}</li>}
-                  {errors.area        && <li>Area — {errors.area.message}</li>}
-                  {errors.districtId  && <li>District — {errors.districtId.message}</li>}
-                  {errors.contactId   && <li>Owner / Agent — {errors.contactId.message}</li>}
-                </ul>
+            <div className="shrink-0 border-t bg-white px-6 sm:px-8 py-4">
+              <div className="flex gap-3">
+                <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  form="property-form"
+                  className="flex-1"
+                  disabled={mutation.isPending}
+                >
+                  {mutation.isPending ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
+                  ) : isEditing ? 'Update Property' : 'Create Property'}
+                </Button>
               </div>
-            )}
-
-            <div className="h-2" />
-          </form>
-        </div>
-
-        {/* ── Sticky footer — always visible ── */}
-        <div className="shrink-0 border-t bg-white px-6 sm:px-8 py-4">
-          <div className="flex gap-3">
-            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              form="property-form"
-              className="flex-1"
-              disabled={mutation.isPending}
-            >
-              {mutation.isPending ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
-              ) : isEditing ? 'Update Property' : 'Create Property'}
-            </Button>
-          </div>
-        </div>
+            </div>
+          </>
+        )}
       </SheetContent>
     </Sheet>
   );
