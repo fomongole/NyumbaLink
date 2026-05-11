@@ -361,14 +361,9 @@ export interface ComplaintStats {
 
 // ─── Audit Logs ───────────────────────────────────────────────────────────────
 export type AuditAction =
-  | 'CREATE'
-  | 'UPDATE'
-  | 'DELETE'
-  | 'RESTORE'
-  | 'STATUS_CHANGE'
-  | 'IMAGE_UPLOAD'
-  | 'IMAGE_DELETE'
-  | 'LOGIN'
+  | 'CREATE' | 'UPDATE' | 'DELETE' | 'RESTORE'
+  | 'STATUS_CHANGE' | 'IMAGE_UPLOAD' | 'IMAGE_DELETE'
+  | 'LOGIN' | 'LOGIN_FAILED' | 'LOGOUT'
   | 'PASSWORD_CHANGE';
 
 export type AuditEntity =

@@ -32,6 +32,8 @@ const ACTION_LABELS: Record<AuditAction, string> = {
   IMAGE_UPLOAD: 'Image Uploaded',
   IMAGE_DELETE: 'Image Deleted',
   LOGIN: 'Login',
+  LOGIN_FAILED:    'Login Failed',
+  LOGOUT:          'Logout', 
   PASSWORD_CHANGE: 'Password Changed',
 };
 
@@ -40,6 +42,8 @@ const ACTION_VARIANTS: Record<AuditAction, 'default' | 'secondary' | 'destructiv
   UPDATE: 'secondary',
   DELETE: 'destructive',
   RESTORE: 'default',
+  LOGIN_FAILED:    'destructive',
+  LOGOUT:          'outline', 
   STATUS_CHANGE: 'secondary',
   IMAGE_UPLOAD: 'secondary',
   IMAGE_DELETE: 'destructive',
