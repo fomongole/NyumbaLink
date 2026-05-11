@@ -13,18 +13,21 @@ import {
   DollarSign, Star, Navigation, Hotel, CalendarClock,
 } from 'lucide-react';
 import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import PropertyFormSheet from '@/components/properties/PropertyFormSheet';
 import ImageUploadManager from '@/components/properties/ImageUploadManager';
 import HostelRoomsPanel from '@/components/hostel-rooms/HostelRoomsPanel';
 import DeleteDialog from '@/components/shared/DeleteDialog';
+
 import { propertiesApi } from '@/lib/api/properties.api';
 import Header from '@/components/layout/Header';
-import { BillingCycle, ResidentialSubtype, HotelCategory } from '@/types';
+import { BillingCycle, HotelCategory } from '@/types';
 
 const TYPE_LABELS: Record<string, string> = {
   RESIDENTIAL_HOUSE: 'Residential House',
@@ -34,11 +37,6 @@ const TYPE_LABELS: Record<string, string> = {
   BUSINESS_SPACE:    'Business Space',
   HOSTEL:            'Hostel',
   HOTEL_LODGE:       'Hotel / Lodge',
-};
-
-const SUBTYPE_LABELS: Record<ResidentialSubtype, string> = {
-  SINGLE: 'Single (1 bedroom / bedsitter)',
-  DOUBLE: 'Double (2 bedrooms)',
 };
 
 const FURNISHING_LABELS: Record<string, string> = {
@@ -70,6 +68,7 @@ export default function PropertyDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const queryClient = useQueryClient();
+
   const [editOpen, setEditOpen] = useState(false);
   const [imagesOpen, setImagesOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -169,7 +168,6 @@ export default function PropertyDetailPage({
               <Images className="h-4 w-4 mr-1.5" />
               Images ({property.images.length}/4)
             </Button>
-
             {!isHostel && (
               <Button
                 variant="outline"
@@ -184,12 +182,10 @@ export default function PropertyDetailPage({
                 )}
               </Button>
             )}
-
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
               <Pencil className="h-4 w-4 mr-1.5" />
               Edit
             </Button>
-
             <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="h-4 w-4 mr-1.5" />
               Delete
@@ -240,7 +236,6 @@ export default function PropertyDetailPage({
                       </Badge>
                     </div>
                   </div>
-
                   {property.images.length > 1 && (
                     <div className="flex gap-2 p-3 overflow-x-auto bg-gray-50">
                       {property.images.map((img) => (
@@ -348,14 +343,6 @@ export default function PropertyDetailPage({
                   <CardContent className="space-y-3">
                     <DetailRow icon={Building2} label="Type" value={TYPE_LABELS[property.type] ?? property.type} />
                     
-                    {property.residentialSubtype && (
-                      <DetailRow
-                        icon={Building2}
-                        label="House Type"
-                        value={SUBTYPE_LABELS[property.residentialSubtype]}
-                      />
-                    )}
-
                     {property.hotelCategory && (
                        <DetailRow
                          icon={Star}
@@ -363,7 +350,7 @@ export default function PropertyDetailPage({
                          value={HOTEL_CATEGORY_LABELS[property.hotelCategory] ?? property.hotelCategory}
                        />
                     )}
-
+                    
                     <DetailRow icon={MapPin} label="District" value={property.district.name} />
                     <DetailRow icon={MapPin} label="Area" value={property.area} />
                     
