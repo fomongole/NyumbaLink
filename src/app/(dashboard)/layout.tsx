@@ -13,8 +13,7 @@ const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
 const WARNING_SECONDS = 2 * 60;
 
 function clearSession() {
-  // Only remove the readable user cookie.
-  // The httpOnly access_token cookie is cleared by the server's /auth/logout endpoint.
+  Cookies.remove('token');
   Cookies.remove('user');
 }
 
@@ -25,10 +24,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const handleLogout = useCallback(async () => {
     setShowWarning(false);
     try {
-      // Tell the server to blacklist the token and clear the httpOnly cookie
       await authApi.logout();
     } catch {
-      // Even if the server call fails, we still clear the local session
+      // Even if the server call fails, clear local session
     }
     clearSession();
     toast.info('You were signed out due to inactivity.');
