@@ -1,23 +1,19 @@
 import axios from 'axios';
-import Cookies from 'js-cookie';
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
   headers: { 'Content-Type': 'application/json' },
+  // Required: tells the browser to send the httpOnly cookie with every request
+  withCredentials: true,
 });
 
-apiClient.interceptors.request.use((config) => {
-  const token = Cookies.get('token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
-});
+// No request interceptor needed — cookie is sent automatically by the browser
 
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     const url = error.config?.url ?? '';
 
-    // Endpoints that legitimately return 401 without meaning "session expired"
     const isLoginRequest = url.includes('/auth/login');
     const isPasswordChangeRequest = url.includes('/users/me/password');
 
@@ -26,8 +22,7 @@ apiClient.interceptors.response.use(
       !isLoginRequest &&
       !isPasswordChangeRequest
     ) {
-      Cookies.remove('token');
-      Cookies.remove('user');
+      // No need to remove cookie manually — call logout to let server clear it
       window.location.href = '/login';
     }
 

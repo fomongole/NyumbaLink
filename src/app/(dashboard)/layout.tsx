@@ -7,14 +7,14 @@ import { toast } from 'sonner';
 import Sidebar from '@/components/layout/Sidebar';
 import { IdleWarningModal } from '@/components/shared/IdleWarningModal';
 import { useIdleTimer } from '@/lib/hooks/useIdleTimer';
+import { authApi } from '@/lib/api/auth.api';
 
-// ── Tune these to your preference ────────────────────────────────────────────
-const IDLE_TIMEOUT_MS = 30 * 60 * 1000; // 30 min of inactivity → warning
-const WARNING_SECONDS = 2 * 60;          // 2 min countdown on the warning dialog
-// ─────────────────────────────────────────────────────────────────────────────
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+const WARNING_SECONDS = 2 * 60;
 
 function clearSession() {
-  Cookies.remove('token');
+  // Only remove the readable user cookie.
+  // The httpOnly access_token cookie is cleared by the server's /auth/logout endpoint.
   Cookies.remove('user');
 }
 
@@ -22,19 +22,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const [showWarning, setShowWarning] = useState(false);
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
     setShowWarning(false);
+    try {
+      // Tell the server to blacklist the token and clear the httpOnly cookie
+      await authApi.logout();
+    } catch {
+      // Even if the server call fails, we still clear the local session
+    }
     clearSession();
     toast.info('You were signed out due to inactivity.');
     router.push('/login');
   }, [router]);
 
   const { resetTimer } = useIdleTimer({
-    idleTimeout:   IDLE_TIMEOUT_MS,
+    idleTimeout: IDLE_TIMEOUT_MS,
     warningBefore: WARNING_SECONDS * 1_000,
     onWarning: () => setShowWarning(true),
-    onIdle:    handleLogout,
-    onActive:  () => setShowWarning(false),
+    onIdle: handleLogout,
+    onActive: () => setShowWarning(false),
   });
 
   const handleStaySignedIn = useCallback(() => {

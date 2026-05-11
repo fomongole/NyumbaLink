@@ -55,12 +55,16 @@ export default function LoginPage() {
     try {
       setIsLoading(true);
       const response = await authApi.login(data);
+
       if (response.user.role !== 'ADMIN') {
         toast.error('Access denied. Admin accounts only.');
         return;
       }
-      Cookies.set('token', response.accessToken, { expires: 7 });
+
+      // The JWT is now in an httpOnly cookie set by the server — JS cannot read it.
+      // We only store the non-sensitive user object so the UI knows who is logged in.
       Cookies.set('user', JSON.stringify(response.user), { expires: 7 });
+
       toast.success(`Welcome back, ${response.user.name}!`);
       router.push('/');
     } catch {
@@ -72,11 +76,6 @@ export default function LoginPage() {
 
   return (
     <>
-      {/*
-        Keyframe defined in a JSX <style> tag — valid in Next.js, no globals.css edit needed.
-        fadeSlideIn: items start invisible + 14px below, then settle into place.
-        Each feature item gets an increasing animationDelay for the stagger effect.
-      */}
       <style>{`
         @keyframes fadeSlideIn {
           from { opacity: 0; transform: translateY(14px); }
@@ -104,22 +103,14 @@ export default function LoginPage() {
           <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-orange-500/10 blur-3xl pointer-events-none" />
 
           <div className="relative z-10 flex h-full flex-col p-12">
-            {/* Logo — animates first */}
-            <div
-              className="anim-fade-slide"
-              style={{ animationDelay: '100ms' }}
-            >
+            <div className="anim-fade-slide" style={{ animationDelay: '100ms' }}>
               <div className="dark transform scale-110 origin-left">
                 <Logo />
               </div>
             </div>
 
             <div className="flex-1 flex flex-col justify-center gap-10 max-w-sm">
-              {/* Headline */}
-              <div
-                className="space-y-3 anim-fade-slide"
-                style={{ animationDelay: '250ms' }}
-              >
+              <div className="space-y-3 anim-fade-slide" style={{ animationDelay: '250ms' }}>
                 <h2 className="text-3xl font-bold leading-tight text-white">
                   Uganda's rental<br />
                   management platform
@@ -130,7 +121,6 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              {/* Feature list — staggered */}
               <div className="grid grid-cols-1 gap-4">
                 {FEATURES.map(({ icon: Icon, title, description }, index) => (
                   <div

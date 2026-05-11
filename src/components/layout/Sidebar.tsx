@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -19,6 +19,7 @@ import {
   DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { authApi } from '@/lib/api/auth.api';
 
 const navItems = [
   { label: 'Dashboard',      href: '/',               icon: LayoutDashboard },
@@ -35,13 +36,24 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleLogout = () => {
-    Cookies.remove('token');
-    Cookies.remove('user');
-    toast.success('Logged out successfully');
-    router.push('/login');
-  };
+  const handleLogout = useCallback(async () => {
+    setIsLoggingOut(true);
+    try {
+      // Tells the server to blacklist the JWT and clear the httpOnly cookie
+      await authApi.logout();
+    } catch {
+      // Even if the server call fails, proceed with local cleanup
+    } finally {
+      // Remove only the readable user cookie (httpOnly token cookie is server-cleared)
+      Cookies.remove('user');
+      setIsLogoutDialogOpen(false);
+      setIsLoggingOut(false);
+      toast.success('Logged out successfully');
+      router.push('/login');
+    }
+  }, [router]);
 
   return (
     <>
@@ -64,8 +76,6 @@ export default function Sidebar() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  // border-l-[3px] on every item keeps layout stable (no shift on active toggle)
-                  // pl-[9px] compensates for the 3px border so text stays visually at 12px from edge
                   'flex items-center gap-3 pl-[9px] pr-3 py-2.5 rounded-lg text-sm font-medium transition-colors border-l-[3px]',
                   isActive
                     ? 'bg-primary text-primary-foreground border-primary-foreground/40'
@@ -111,11 +121,19 @@ export default function Sidebar() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0 mt-4">
-            <Button variant="outline" onClick={() => setIsLogoutDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsLogoutDialogOpen(false)}
+              disabled={isLoggingOut}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleLogout}>
-              Log out
+            <Button
+              variant="destructive"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+            >
+              {isLoggingOut ? 'Logging out...' : 'Log out'}
             </Button>
           </DialogFooter>
         </DialogContent>
