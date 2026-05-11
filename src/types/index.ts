@@ -99,13 +99,8 @@ export type PropertyType =
   | 'HOSTEL'
   | 'HOTEL_LODGE';
 
-/** Only set when type = RESIDENTIAL_HOUSE */
-export type ResidentialSubtype = 'SINGLE' | 'DOUBLE';
-
 export type HotelCategory = 'ORDINARY' | 'VIP' | 'VVIP';
-
 export type PropertyStatus = 'AVAILABLE' | 'RENTED';
-
 export type FurnishingStatus = 'FURNISHED' | 'SEMI_FURNISHED' | 'UNFURNISHED';
 
 /**
@@ -132,7 +127,6 @@ export interface Property {
   title: string;
   description: string;
   type: PropertyType;
-  residentialSubtype?: ResidentialSubtype;
   price: number;
   billingCycle?: BillingCycle;
   numberOfRooms: number;
@@ -164,7 +158,6 @@ export interface CreatePropertyPayload {
   title: string;
   description: string;
   type: PropertyType;
-  residentialSubtype?: ResidentialSubtype;
   price: number;
   billingCycle?: BillingCycle;
   numberOfRooms?: number;

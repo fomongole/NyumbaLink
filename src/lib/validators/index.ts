@@ -64,7 +64,6 @@ export const propertySchema = z.object({
     ] as const,
     { message: 'Please select a property type' },
   ),
-  residentialSubtype: z.enum(['SINGLE', 'DOUBLE'] as const).optional(),
   price: z.preprocess(
     (v) =>
       v === '' || v === undefined || v === null || Number.isNaN(Number(v))

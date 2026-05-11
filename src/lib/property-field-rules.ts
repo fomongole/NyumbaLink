@@ -12,8 +12,7 @@ export interface PropertyFieldConfig {
   showBillingCycle: boolean;
   allowedBillingCycles: BillingCycle[];
   showSecurityDeposit: boolean;
-  /** Only true for RESIDENTIAL_HOUSE — admin picks SINGLE or DOUBLE subtype */
-  showResidentialSubtype: boolean;
+  
   /** Sub-units managed via the HostelRooms module */
   isHostel: boolean;
   /** Supports DAILY billing (Hotel/Lodge and AirBnB) */
@@ -31,7 +30,6 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     showBillingCycle: true,
     allowedBillingCycles: ['MONTHLY', 'QUARTERLY', 'BIANNUAL', 'ANNUAL'],
     showSecurityDeposit: true,
-    showResidentialSubtype: true,
     isHostel: false,
     isHotelLodge: false,
   },
@@ -45,7 +43,6 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     showBillingCycle: true,
     allowedBillingCycles: ['MONTHLY', 'QUARTERLY', 'BIANNUAL', 'ANNUAL'],
     showSecurityDeposit: true,
-    showResidentialSubtype: false,
     isHostel: false,
     isHotelLodge: false,
   },
@@ -59,7 +56,6 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     showBillingCycle: true,
     allowedBillingCycles: ['DAILY', 'MONTHLY', 'QUARTERLY', 'BIANNUAL', 'ANNUAL'],
     showSecurityDeposit: true,
-    showResidentialSubtype: false,
     isHostel: false,
     isHotelLodge: false,
   },
@@ -73,7 +69,6 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     showBillingCycle: true,
     allowedBillingCycles: ['MONTHLY', 'QUARTERLY', 'BIANNUAL', 'ANNUAL'],
     showSecurityDeposit: true,
-    showResidentialSubtype: false,
     isHostel: false,
     isHotelLodge: false,
   },
@@ -87,7 +82,6 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     showBillingCycle: true,
     allowedBillingCycles: ['MONTHLY', 'QUARTERLY', 'BIANNUAL', 'ANNUAL'],
     showSecurityDeposit: true,
-    showResidentialSubtype: false,
     isHostel: false,
     isHotelLodge: false,
   },
@@ -101,7 +95,6 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     showBillingCycle: false,    // billing cycle lives on each HostelRoom
     allowedBillingCycles: [],
     showSecurityDeposit: false,
-    showResidentialSubtype: false,
     isHostel: true,
     isHotelLodge: false,
   },
@@ -115,7 +108,6 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     showBillingCycle: true,
     allowedBillingCycles: ['DAILY', 'MONTHLY'],
     showSecurityDeposit: false,
-    showResidentialSubtype: false,
     isHostel: false,
     isHotelLodge: true,
   },

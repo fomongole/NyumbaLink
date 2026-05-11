@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Loader2, Info } from 'lucide-react';
+
 import {
   Sheet, SheetContent, SheetHeader,
   SheetTitle, SheetDescription,
@@ -18,6 +19,7 @@ import {
   Select, SelectContent, SelectItem,
   SelectTrigger, SelectValue,
 } from '@/components/ui/select';
+
 import { propertySchema, PropertyFormData } from '@/lib/validators';
 import { propertiesApi } from '@/lib/api/properties.api';
 import { contactsApi } from '@/lib/api/contacts.api';
@@ -34,11 +36,6 @@ const PROPERTY_TYPES = [
   { value: 'BUSINESS_SPACE',    label: 'Business Space' },
   { value: 'HOSTEL',            label: 'Hostel (with rooms)' },
   { value: 'HOTEL_LODGE',       label: 'Hotel / Lodge' },
-];
-
-const RESIDENTIAL_SUBTYPES = [
-  { value: 'SINGLE', label: 'Single (1 bedroom / bedsitter)' },
-  { value: 'DOUBLE', label: 'Double (2 bedrooms)' },
 ];
 
 const FURNISHING_OPTIONS = [
@@ -97,9 +94,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
 
   useEffect(() => {
     setValue('billingCycle', undefined);
-    if (selectedType !== 'RESIDENTIAL_HOUSE') {
-      setValue('residentialSubtype', undefined);
-    }
   }, [selectedType, setValue]);
 
   useEffect(() => {
@@ -108,7 +102,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
         title:               property.title,
         description:         property.description,
         type:                property.type,
-        residentialSubtype:  property.residentialSubtype ?? undefined,
         price:               property.price,
         billingCycle:        property.billingCycle ?? undefined,
         numberOfRooms:       property.numberOfRooms,
@@ -193,7 +186,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                 </SheetDescription>
               </SheetHeader>
             </div>
-
             <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-5">
               <ImageUploadManager
                 open={true}
@@ -202,7 +194,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                 inline={true}
               />
             </div>
-
             <div className="shrink-0 border-t bg-white px-6 sm:px-8 py-4">
               <Button
                 className="w-full"
@@ -228,7 +219,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                 </SheetDescription>
               </SheetHeader>
             </div>
-
             <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-5">
               <form
                 id="property-form"
@@ -290,25 +280,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                     <FieldError message={errors.price?.message} />
                   </div>
                 </div>
-
-                {fieldConfig?.showResidentialSubtype && (
-                  <div className="space-y-1.5">
-                    <Label>House Type <span className="text-destructive">*</span></Label>
-                    <Select
-                      value={watch('residentialSubtype') ?? ''}
-                      onValueChange={(v) => setVal('residentialSubtype', v)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Single or Double?" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {RESIDENTIAL_SUBTYPES.map((s) => (
-                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
 
                 {fieldConfig?.showBillingCycle && (
                   <div className="space-y-1.5">
@@ -548,7 +519,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                     </ul>
                   </div>
                 )}
-
                 <div className="h-2" />
               </form>
             </div>
