@@ -7,8 +7,8 @@ import { Toaster } from 'sonner';
 const geist = Geist({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'NyumbaLink — Admin Dashboard',
-  description: 'Property management dashboard for NyumbaLink Uganda',
+  title: 'Rentora — Admin Dashboard',
+  description: 'Property management dashboard for Rentora Houselink Uganda',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

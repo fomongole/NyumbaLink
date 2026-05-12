@@ -88,7 +88,6 @@ export default function LoginPage() {
       `}</style>
 
       <div className="flex w-full min-h-screen">
-
         {/* ── Left Column ── */}
         <div className="relative hidden lg:flex w-[52%] flex-col bg-zinc-950 text-white overflow-hidden">
           <div
@@ -145,7 +144,7 @@ export default function LoginPage() {
               style={{ animationDelay: '900ms' }}
             >
               <p className="text-xs text-zinc-600">Admin Portal · v1.0</p>
-              <p className="text-xs text-zinc-600">© {new Date().getFullYear()} NyumbaLink Uganda</p>
+              <p className="text-xs text-zinc-600">© {new Date().getFullYear()} Rentora Houselink Uganda</p>
             </div>
           </div>
         </div>
@@ -175,7 +174,7 @@ export default function LoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="admin@nyumbalink.com"
+                    placeholder="rentorahouselink@gmail.com"
                     autoComplete="email"
                     className="h-11 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
                     {...register('email')}

@@ -7,7 +7,7 @@ export default function DashboardPage() {
     <>
       <Header
         title="Dashboard"
-        description="Welcome to the NyumbaLink admin panel"
+        description="Welcome to the Rentora Houselink admin panel"
       />
       <main className="flex-1 p-6 space-y-6">
         <StatsCards />
