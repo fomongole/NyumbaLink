@@ -1,5 +1,4 @@
 'use client';
-
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -11,7 +10,6 @@ import {
 } from 'lucide-react';
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
-
 import { cn } from '@/lib/utils';
 import { Logo } from '@/components/shared/Logo';
 import {
@@ -22,14 +20,14 @@ import { Button } from '@/components/ui/button';
 import { authApi } from '@/lib/api/auth.api';
 
 const navItems = [
-  { label: 'Dashboard',      href: '/',               icon: LayoutDashboard },
-  { label: 'Properties',     href: '/properties',     icon: Building2 },
-  { label: 'Contacts',       href: '/contacts',       icon: ContactRound },
-  { label: 'Bookings',       href: '/bookings',       icon: CalendarCheck },
-  { label: 'Complaints',     href: '/complaints',     icon: MessageSquareWarning },
-  { label: 'Notifications',  href: '/notifications',  icon: Bell },
-  { label: 'Users',          href: '/users',          icon: ShieldCheck },
-  { label: 'Audit Logs',     href: '/audit-logs',     icon: ScrollText },
+  { label: 'Dashboard',     href: '/',              icon: LayoutDashboard },
+  { label: 'Properties',    href: '/properties',    icon: Building2 },
+  { label: 'Contacts',      href: '/contacts',      icon: ContactRound },
+  { label: 'Bookings',      href: '/bookings',      icon: CalendarCheck },
+  { label: 'Complaints',    href: '/complaints',    icon: MessageSquareWarning },
+  { label: 'Notifications', href: '/notifications', icon: Bell },
+  { label: 'Users',         href: '/users',         icon: ShieldCheck },
+  { label: 'Audit Logs',    href: '/audit-logs',    icon: ScrollText },
 ];
 
 export default function Sidebar() {
@@ -41,12 +39,10 @@ export default function Sidebar() {
   const handleLogout = useCallback(async () => {
     setIsLoggingOut(true);
     try {
-      // Tells the server to blacklist the JWT and clear the httpOnly cookie
       await authApi.logout();
     } catch {
       // Even if the server call fails, proceed with local cleanup
     } finally {
-      // Remove only the readable user cookie (httpOnly token cookie is server-cleared)
       Cookies.remove('user');
       setIsLogoutDialogOpen(false);
       setIsLoggingOut(false);
@@ -58,12 +54,13 @@ export default function Sidebar() {
   return (
     <>
       <aside className="hidden md:flex w-64 h-screen sticky top-0 bg-gray-900 text-white flex-col shrink-0">
-        <div className="py-5 border-b border-gray-800 shrink-0">
-          <div className="dark transform scale-90 origin-left">
-            <Logo />
-          </div>
+
+        {/* ── Logo area ── */}
+        <div className="px-4 py-4 border-b border-gray-800 shrink-0">
+          <Logo contained />
         </div>
 
+        {/* ── Nav ── */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -89,6 +86,7 @@ export default function Sidebar() {
           })}
         </nav>
 
+        {/* ── Bottom actions ── */}
         <div className="px-3 py-4 border-t border-gray-800 space-y-0.5 shrink-0">
           <Link
             href="/settings"
@@ -112,6 +110,7 @@ export default function Sidebar() {
         </div>
       </aside>
 
+      {/* ── Logout confirmation dialog ── */}
       <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>

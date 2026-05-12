@@ -1,5 +1,4 @@
 'use client';
-
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { toast } from 'sonner';
 import { Loader2, Eye, EyeOff, Building2, Users, ShieldCheck, BarChart3 } from 'lucide-react';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -55,16 +53,11 @@ export default function LoginPage() {
     try {
       setIsLoading(true);
       const response = await authApi.login(data);
-
       if (response.user.role !== 'ADMIN') {
         toast.error('Access denied. Admin accounts only.');
         return;
       }
-
-      // The JWT is now in an httpOnly cookie set by the server — JS cannot read it.
-      // We only store the non-sensitive user object so the UI knows who is logged in.
       Cookies.set('user', JSON.stringify(response.user), { expires: 7 });
-
       toast.success(`Welcome back, ${response.user.name}!`);
       router.push('/');
     } catch {
@@ -88,8 +81,11 @@ export default function LoginPage() {
       `}</style>
 
       <div className="flex w-full min-h-screen">
+
         {/* ── Left Column ── */}
         <div className="relative hidden lg:flex w-[52%] flex-col bg-zinc-950 text-white overflow-hidden">
+
+          {/* subtle grid texture */}
           <div
             className="absolute inset-0 opacity-[0.04]"
             style={{
@@ -98,14 +94,16 @@ export default function LoginPage() {
               backgroundSize: '40px 40px',
             }}
           />
+
+          {/* glow blobs */}
           <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
           <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-orange-500/10 blur-3xl pointer-events-none" />
 
           <div className="relative z-10 flex h-full flex-col p-12">
+
+            {/* Logo with white contained tile so it pops on dark bg */}
             <div className="anim-fade-slide" style={{ animationDelay: '100ms' }}>
-              <div className="dark transform scale-110 origin-left">
-                <Logo />
-              </div>
+              <Logo contained />
             </div>
 
             <div className="flex-1 flex flex-col justify-center gap-10 max-w-sm">
@@ -151,6 +149,8 @@ export default function LoginPage() {
 
         {/* ── Right Column ── */}
         <div className="flex flex-1 flex-col min-h-screen bg-white">
+
+          {/* Mobile logo */}
           <div className="flex lg:hidden items-center justify-center pt-10">
             <Logo />
           </div>
@@ -174,7 +174,7 @@ export default function LoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="rentorahouselink@gmail.com"
+                    placeholder="admin@rentorahouselink.com"
                     autoComplete="email"
                     className="h-11 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
                     {...register('email')}
@@ -236,6 +236,7 @@ export default function LoginPage() {
             <p className="text-xs text-gray-400">Need access? Contact your system administrator.</p>
           </div>
         </div>
+
       </div>
     </>
   );
