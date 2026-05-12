@@ -15,8 +15,8 @@ const WARNING_SECONDS = 2 * 60;
 function clearSession() {
   Cookies.remove('token');
   Cookies.remove('user');
+  Cookies.remove('loginTimestamp');
 }
-
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [showWarning, setShowWarning] = useState(false);
