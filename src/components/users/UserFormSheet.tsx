@@ -1,10 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 
 import {
   Sheet,
@@ -34,6 +35,7 @@ interface Props {
 
 export default function UserFormSheet({ open, onClose }: Props) {
   const queryClient = useQueryClient();
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -53,6 +55,7 @@ export default function UserFormSheet({ open, onClose }: Props) {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('Admin user created successfully');
       reset();
+      setShowPassword(false);
       onClose();
     },
     onError: (err: { response?: { data?: { message?: string } } }) => {
@@ -89,11 +92,22 @@ export default function UserFormSheet({ open, onClose }: Props) {
 
           <div className="space-y-1.5">
             <Label>Password <span className="text-destructive">*</span></Label>
-            <Input
-              type="password"
-              placeholder="Minimum 6 characters"
-              {...register('password')}
-            />
+            <div className="relative">
+              <Input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Min 8 chars, one uppercase, one number"
+                className="pr-10"
+                {...register('password')}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
             {errors.password && (
               <p className="text-sm text-destructive">{errors.password.message}</p>
             )}

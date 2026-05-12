@@ -106,28 +106,35 @@ export const propertySchema = z.object({
 export type PropertyFormData = z.infer<typeof propertySchema>;
 
 // ─── Users ────────────────────────────────────────────────────────────────────
+const strongPassword = z
+  .string()
+  .min(8, 'Password must be at least 8 characters')
+  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+  .regex(/\d/, 'Password must contain at least one number');
+
+// ─── Users ────────────────────────────────────────────────────────────────────
 export const createAdminSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: strongPassword,
   role: z.enum(['ADMIN', 'RENTER']),
-});
-
-export const updateProfileSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').optional(),
-  email: z.string().email('Enter a valid email').optional(),
 });
 
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, 'Current password is required'),
-    newPassword: z.string().min(6, 'New password must be at least 6 characters'),
+    newPassword: strongPassword,
     confirmPassword: z.string().min(1, 'Please confirm your new password'),
   })
   .refine((d) => d.newPassword === d.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
   });
+
+export const updateProfileSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').optional(),
+  email: z.string().email('Enter a valid email').optional(),
+});
 
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type CreateAdminFormData = z.infer<typeof createAdminSchema>;
