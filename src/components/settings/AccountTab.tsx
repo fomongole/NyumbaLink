@@ -196,7 +196,9 @@ export default function AccountTab() {
               <Lock className="h-4 w-4 text-gray-500" />
               <CardTitle className="text-base">Change Password</CardTitle>
             </div>
-            <CardDescription>Use a strong password at least 6 characters long</CardDescription>
+            <CardDescription>
+              Min 8 characters, at least one uppercase letter and one number
+            </CardDescription>
           </CardHeader>
 
           <CardContent>
