@@ -93,19 +93,22 @@ function ComplaintDetailSheet({
   const queryClient = useQueryClient();
   const [newStatus, setNewStatus] = useState<ComplaintStatus | ''>('');
   const [adminNotes, setAdminNotes] = useState('');
+  const [adminReply, setAdminReply] = useState('');
 
   const updateMutation = useMutation({
     mutationFn: () =>
       complaintsApi.updateStatus(complaint!.id, {
         status: newStatus as ComplaintStatus,
         adminNotes: adminNotes || undefined,
+        adminReply: adminReply || undefined,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['complaints'] });
       queryClient.invalidateQueries({ queryKey: ['complaint-stats'] });
-      toast.success('Complaint status updated');
+      toast.success('Complaint updated');
       setNewStatus('');
       setAdminNotes('');
+      setAdminReply('');
       onClose();
     },
     onError: (err: any) => {
@@ -130,16 +133,13 @@ function ComplaintDetailSheet({
       <SheetContent className="!max-w-[560px] !w-[90vw] overflow-y-auto p-6">
         <SheetHeader className="mb-6">
           <SheetTitle>Complaint Details</SheetTitle>
-          <SheetDescription>
-            Submitted {fmt(complaint.createdAt)}
-          </SheetDescription>
+          <SheetDescription>Submitted {fmt(complaint.createdAt)}</SheetDescription>
         </SheetHeader>
 
         <div className="space-y-5">
+          {/* Status + Category */}
           <div className="flex items-center gap-3">
-            <span
-              className={`inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1 rounded-full border ${badge.className}`}
-            >
+            <span className={`inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1 rounded-full border ${badge.className}`}>
               <span className={`h-2 w-2 rounded-full ${STATUS_DOT[complaint.status]}`} />
               {badge.label}
             </span>
@@ -148,6 +148,7 @@ function ComplaintDetailSheet({
             </Badge>
           </div>
 
+          {/* Submitter */}
           <div className="rounded-lg border p-4 space-y-1.5">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Submitter</p>
             <p className="font-medium">{complaint.submitterName}</p>
@@ -157,6 +158,7 @@ function ComplaintDetailSheet({
             )}
           </div>
 
+          {/* Related property */}
           {complaint.property && (
             <div className="rounded-lg border p-4 space-y-1">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Related Property</p>
@@ -165,6 +167,7 @@ function ComplaintDetailSheet({
             </div>
           )}
 
+          {/* Description */}
           <div className="space-y-1.5">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Description</p>
             <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
@@ -172,21 +175,34 @@ function ComplaintDetailSheet({
             </p>
           </div>
 
+          {/* Admin notes (internal) */}
           {complaint.adminNotes && (
             <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 space-y-1">
-              <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Admin Notes</p>
+              <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">
+                Internal Notes
+              </p>
               <p className="text-sm text-amber-800 whitespace-pre-wrap">{complaint.adminNotes}</p>
               {complaint.resolvedByName && (
-                <p className="text-xs text-amber-600 mt-1">
-                  Actioned by {complaint.resolvedByName}
-                </p>
+                <p className="text-xs text-amber-600 mt-1">Actioned by {complaint.resolvedByName}</p>
               )}
             </div>
           )}
 
+          {/* Admin reply — shown if one was previously sent */}
+          {complaint.adminReply && (
+            <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-4 space-y-1">
+              <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">
+                Reply sent to renter
+              </p>
+              <p className="text-sm text-emerald-800 whitespace-pre-wrap">{complaint.adminReply}</p>
+            </div>
+          )}
+
+          {/* Update form */}
           {allowedNext.length > 0 && (
-            <div className="rounded-lg border p-4 space-y-3">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Update Status</p>
+            <div className="rounded-lg border p-4 space-y-4">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Update Complaint</p>
+
               <div className="space-y-1.5">
                 <Label className="text-sm">New Status</Label>
                 <Select
@@ -203,21 +219,41 @@ function ComplaintDetailSheet({
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-1.5">
-                <Label className="text-sm">Admin Notes (optional)</Label>
+                <Label className="text-sm">
+                  Reply to renter
+                  <span className="ml-1.5 text-xs font-normal text-gray-400">
+                    (sent via email + in-app notification if they have an account)
+                  </span>
+                </Label>
                 <Textarea
-                  placeholder="Add internal notes about this complaint..."
+                  placeholder="Write a message the renter will see, e.g. what action was taken..."
                   rows={3}
+                  value={adminReply}
+                  onChange={(e) => setAdminReply(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-sm">
+                  Internal notes
+                  <span className="ml-1.5 text-xs font-normal text-gray-400">(admin only, never shown to renter)</span>
+                </Label>
+                <Textarea
+                  placeholder="Add private notes for your team..."
+                  rows={2}
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
                 />
               </div>
+
               <Button
                 className="w-full"
                 disabled={!newStatus || updateMutation.isPending}
                 onClick={() => updateMutation.mutate()}
               >
-                {updateMutation.isPending ? 'Updating...' : 'Update Status'}
+                {updateMutation.isPending ? 'Updating...' : 'Update Complaint'}
               </Button>
             </div>
           )}
@@ -226,6 +262,7 @@ function ComplaintDetailSheet({
     </Sheet>
   );
 }
+
 
 // ── Stat Card (Updated to Dashboard Style) ───────────────────────────────────
 

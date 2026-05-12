@@ -330,11 +330,18 @@ export interface Complaint {
   description: string;
   status: ComplaintStatus;
   adminNotes?: string;
+  adminReply?: string;
   resolvedByName?: string;
   resolvedAt?: string;
   property?: Property;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface UpdateComplaintStatusPayload {
+  status: ComplaintStatus;
+  adminNotes?: string;
+  adminReply?: string;
 }
 
 export interface ComplaintFilters {
@@ -343,11 +350,6 @@ export interface ComplaintFilters {
   propertyId?: string;
   page?: number;
   limit?: number;
-}
-
-export interface UpdateComplaintStatusPayload {
-  status: ComplaintStatus;
-  adminNotes?: string;
 }
 
 export interface ComplaintStats {
