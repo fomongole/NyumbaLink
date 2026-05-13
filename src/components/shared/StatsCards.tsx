@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import {
   Building2, CheckCircle, XCircle, ContactRound,
-  Percent, Eye, MessageCircle,
+  Percent, Eye, MessageCircle, Star,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -73,6 +73,15 @@ export default function StatsCards() {
       badge: null,
     },
     {
+      title: 'Featured',
+      value: stats?.featured ?? 0,
+      icon: Star,
+      color: 'text-yellow-600',
+      bg: 'bg-yellow-50',
+      loading: loadingStats,
+      badge: null,
+    },
+    {
       title: 'Contacts',
       value: contactsResponse?.meta?.total ?? 0,
       icon: ContactRound,
@@ -89,7 +98,7 @@ export default function StatsCards() {
   return (
     <div className="space-y-4">
       {/* Primary stats row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {primaryStats.map((stat) => {
           const Icon = stat.icon;
           return (
