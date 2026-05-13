@@ -24,6 +24,7 @@ import { propertySchema, PropertyFormData } from '@/lib/validators';
 import { propertiesApi } from '@/lib/api/properties.api';
 import { contactsApi } from '@/lib/api/contacts.api';
 import { districtsApi } from '@/lib/api/districts.api';
+import { universitiesApi } from '@/lib/api/universities.api';
 import { getFieldConfig } from '@/lib/property-field-rules';
 import { BillingCycle, Property } from '@/types';
 import ImageUploadManager from './ImageUploadManager';
@@ -77,6 +78,11 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
     queryFn: districtsApi.getAll,
   });
 
+  const { data: universities = [] } = useQuery({
+    queryKey: ['universities'],
+    queryFn: universitiesApi.getAll,
+  });
+
   const {
     register, handleSubmit, reset, setValue, watch,
     formState: { errors, isSubmitted },
@@ -94,31 +100,38 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
 
   useEffect(() => {
     setValue('billingCycle', undefined);
+    // Clear university fields if switching away from HOSTEL
+    if (selectedType !== 'HOSTEL') {
+      setValue('universityId', undefined);
+      setValue('approximateDistanceKm', undefined);
+    }
   }, [selectedType, setValue]);
 
   useEffect(() => {
     if (property) {
       reset({
-        title:               property.title,
-        description:         property.description,
-        type:                property.type,
-        price:               property.price,
-        billingCycle:        property.billingCycle ?? undefined,
-        numberOfRooms:       property.numberOfRooms,
-        totalRooms:          property.totalRooms ?? undefined,
-        hotelCategory:       property.hotelCategory ?? undefined,
-        area:                property.area,
-        address:             property.address ?? '',
-        latitude:            property.latitude,
-        longitude:           property.longitude,
-        furnishing:          property.furnishing,
-        securityDeposit:     property.securityDeposit,
-        availableFrom:       property.availableFrom ? property.availableFrom.split('T')[0] : '',
-        floor:               property.floor,
-        parkingAvailable:    property.parkingAvailable ?? false,
-        contactId:           property.contact.id,
-        districtId:          property.district.id,
-        amenities:           property.amenities ?? [],
+        title:                   property.title,
+        description:             property.description,
+        type:                    property.type,
+        price:                   property.price,
+        billingCycle:            property.billingCycle ?? undefined,
+        numberOfRooms:           property.numberOfRooms,
+        totalRooms:              property.totalRooms ?? undefined,
+        hotelCategory:           property.hotelCategory ?? undefined,
+        area:                    property.area,
+        address:                 property.address ?? '',
+        latitude:                property.latitude,
+        longitude:               property.longitude,
+        furnishing:              property.furnishing,
+        securityDeposit:         property.securityDeposit,
+        availableFrom:           property.availableFrom ? property.availableFrom.split('T')[0] : '',
+        floor:                   property.floor,
+        parkingAvailable:        property.parkingAvailable ?? false,
+        contactId:               property.contact.id,
+        districtId:              property.district.id,
+        amenities:               property.amenities ?? [],
+        universityId:            property.university?.id ?? '',
+        approximateDistanceKm:   property.approximateDistanceKm ?? undefined,
       });
     } else {
       reset({
@@ -129,7 +142,6 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
     }
   }, [property, reset]);
 
-  // Reset internal tracking phase when sheet closes entirely
   useEffect(() => {
     if (!open) {
       setCreatedProperty(null);
@@ -145,9 +157,8 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
     onSuccess: (savedProperty) => {
       queryClient.invalidateQueries({ queryKey: ['properties'] });
       toast.success(isEditing ? 'Property updated!' : 'Property created!');
-      
+
       if (!isEditing && savedProperty?.id) {
-        // Start Phase 2: Image Upload
         setCreatedProperty(savedProperty);
       } else {
         onClose();
@@ -174,7 +185,7 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
   return (
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent className="!max-w-[800px] !w-[90vw] flex flex-col p-0">
-        
+
         {createdProperty ? (
           /* ── PHASE 2: IMAGE UPLOAD ── */
           <>
@@ -182,14 +193,15 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
               <SheetHeader>
                 <SheetTitle>Step 2: Upload Images</SheetTitle>
                 <SheetDescription>
-                  Property created successfully! Add up to 4 images for <b>{createdProperty.title}</b>. You can manage these later.
+                  Property created successfully! Add up to 4 images for{' '}
+                  <b>{createdProperty.title}</b>. You can manage these later.
                 </SheetDescription>
               </SheetHeader>
             </div>
             <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-5">
               <ImageUploadManager
                 open={true}
-                onClose={() => {}} // Controlled by outer Done button
+                onClose={() => {}}
                 property={createdProperty}
                 inline={true}
               />
@@ -297,7 +309,9 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-[10px] text-gray-500">The price above is per this billing period.</p>
+                    <p className="text-[10px] text-gray-500">
+                      The price above is per this billing period.
+                    </p>
                     <FieldError message={errors.billingCycle?.message} />
                   </div>
                 )}
@@ -314,15 +328,23 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                     <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-sm">
                       <Info className="h-4 w-4 mt-0.5 shrink-0" />
                       <p>
-                        After saving, you can add individual rooms with their own prices and billing
-                        periods from the property detail page.
+                        After saving, you can add individual rooms with their own prices and
+                        billing periods from the property detail page.
                       </p>
                     </div>
+
                     {fieldConfig?.showTotalRooms && (
                       <div className="space-y-1.5">
                         <Label>Total Rooms (capacity cap)</Label>
-                        <Input type="number" min={1} placeholder="e.g. 20 — leave empty for no limit" {...register('totalRooms')} />
-                        <p className="text-xs text-gray-500">Rooms added to this hostel cannot exceed this number.</p>
+                        <Input
+                          type="number"
+                          min={1}
+                          placeholder="e.g. 20 — leave empty for no limit"
+                          {...register('totalRooms')}
+                        />
+                        <p className="text-xs text-gray-500">
+                          Rooms added to this hostel cannot exceed this number.
+                        </p>
                       </div>
                     )}
                   </>
@@ -348,12 +370,22 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label>Latitude</Label>
-                    <Input type="number" step="any" placeholder="e.g. 0.347596" {...register('latitude')} />
+                    <Input
+                      type="number"
+                      step="any"
+                      placeholder="e.g. 0.347596"
+                      {...register('latitude')}
+                    />
                     <p className="text-[10px] text-gray-500">Copy/paste from Google Maps</p>
                   </div>
                   <div className="space-y-1.5">
                     <Label>Longitude</Label>
-                    <Input type="number" step="any" placeholder="e.g. 32.582520" {...register('longitude')} />
+                    <Input
+                      type="number"
+                      step="any"
+                      placeholder="e.g. 32.582520"
+                      {...register('longitude')}
+                    />
                   </div>
                 </div>
 
@@ -400,6 +432,55 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                   </div>
                 </div>
 
+                {/* ── HOSTEL: University & Distance ─────────────────────── */}
+                {fieldConfig?.showUniversity && (
+                  <>
+                    <SectionLabel>University Association</SectionLabel>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <Label>Nearby University</Label>
+                        <Select
+                          value={watch('universityId') ?? UNSET}
+                          onValueChange={(v) =>
+                            setVal('universityId', v === UNSET ? '' : v)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select university (optional)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={UNSET}>None</SelectItem>
+                            {universities.map((u) => (
+                              <SelectItem key={u.id} value={u.id}>
+                                {u.shortName ? `${u.shortName} — ` : ''}{u.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-gray-500">
+                          Enables "find hostels near [university]" filtering
+                        </p>
+                      </div>
+
+                      {fieldConfig?.showApproximateDistanceKm && (
+                        <div className="space-y-1.5">
+                          <Label>Distance to University (km)</Label>
+                          <Input
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            placeholder="e.g. 0.5"
+                            {...register('approximateDistanceKm')}
+                          />
+                          <p className="text-xs text-gray-500">
+                            Walking / commuting distance — more useful than straight-line
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+
                 {(fieldConfig?.showFurnishing ||
                   fieldConfig?.showHotelCategory ||
                   fieldConfig?.showSecurityDeposit ||
@@ -413,7 +494,9 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                         <Label>Furnishing</Label>
                         <Select
                           value={watch('furnishing') ?? UNSET}
-                          onValueChange={(v) => setVal('furnishing', v === UNSET ? undefined : v)}
+                          onValueChange={(v) =>
+                            setVal('furnishing', v === UNSET ? undefined : v)
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Select furnishing" />
@@ -433,9 +516,13 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                         <Label>Category</Label>
                         <Select
                           value={watch('hotelCategory') ?? UNSET}
-                          onValueChange={(v) => setVal('hotelCategory', v === UNSET ? undefined : v)}
+                          onValueChange={(v) =>
+                            setVal('hotelCategory', v === UNSET ? undefined : v)
+                          }
                         >
-                          <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select category" />
+                          </SelectTrigger>
                           <SelectContent>
                             <SelectItem value={UNSET}>Not specified</SelectItem>
                             <SelectItem value="ORDINARY">Ordinary</SelectItem>
@@ -450,14 +537,23 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                       {fieldConfig?.showSecurityDeposit && (
                         <div className="space-y-1.5">
                           <Label>Security Deposit (UGX)</Label>
-                          <Input type="number" placeholder="e.g. 500000" {...register('securityDeposit')} />
+                          <Input
+                            type="number"
+                            placeholder="e.g. 500000"
+                            {...register('securityDeposit')}
+                          />
                         </div>
                       )}
 
                       {fieldConfig?.showFloor && (
                         <div className="space-y-1.5">
                           <Label>Floor / Level</Label>
-                          <Input type="number" min={0} placeholder="0 = ground" {...register('floor')} />
+                          <Input
+                            type="number"
+                            min={0}
+                            placeholder="0 = ground"
+                            {...register('floor')}
+                          />
                         </div>
                       )}
                     </div>
@@ -479,7 +575,10 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                               checked={watch('parkingAvailable') ?? false}
                               onChange={(e) => setValue('parkingAvailable', e.target.checked)}
                             />
-                            <label htmlFor="parkingAvailable" className="text-sm text-gray-700 cursor-pointer">
+                            <label
+                              htmlFor="parkingAvailable"
+                              className="text-sm text-gray-700 cursor-pointer"
+                            >
                               Yes, parking is available
                             </label>
                           </div>
@@ -497,7 +596,10 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                     onChange={(e) =>
                       setValue(
                         'amenities',
-                        e.target.value.split(',').map((a) => a.trim()).filter(Boolean),
+                        e.target.value
+                          .split(',')
+                          .map((a) => a.trim())
+                          .filter(Boolean),
                       )
                     }
                     defaultValue={property?.amenities?.join(', ') ?? ''}
@@ -507,7 +609,9 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
 
                 {isSubmitted && Object.keys(errors).length > 0 && (
                   <div className="rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-                    <p className="font-medium mb-1">Please fix the following before submitting:</p>
+                    <p className="font-medium mb-1">
+                      Please fix the following before submitting:
+                    </p>
                     <ul className="list-disc list-inside space-y-0.5">
                       {errors.title       && <li>Title — {errors.title.message}</li>}
                       {errors.description && <li>Description — {errors.description.message}</li>}
@@ -525,7 +629,12 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
 
             <div className="shrink-0 border-t bg-white px-6 sm:px-8 py-4">
               <div className="flex gap-3">
-                <Button type="button" variant="outline" className="flex-1" onClick={onClose}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={onClose}
+                >
                   Cancel
                 </Button>
                 <Button

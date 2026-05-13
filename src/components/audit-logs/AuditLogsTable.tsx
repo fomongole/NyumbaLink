@@ -61,6 +61,7 @@ const ENTITY_LABELS: Record<AuditEntity, string> = {
   BOOKING:     'Booking',
   DISTRICT:    'District',
   COMPLAINT:   'Complaint',
+  UNIVERSITY:  'University',
 };
 
 const UNSET = '__ALL__';

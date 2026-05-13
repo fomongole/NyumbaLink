@@ -7,7 +7,6 @@ export const loginSchema = z.object({
 });
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
-/** Converts empty strings to undefined so optional unique DB fields get NULL */
 const optionalString = z
   .string()
   .optional()
@@ -28,7 +27,7 @@ const availableFromField = z
     return isNaN(date.getTime()) ? undefined : date.toISOString();
   });
 
-// ─── Contact (replaces Landlord) ─────────────────────────────────────────────
+// ─── Contact ──────────────────────────────────────────────────────────────────
 export const contactSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   phone: z.string().min(10, 'Enter a valid phone number'),
@@ -47,6 +46,27 @@ export const contactSchema = z.object({
 
 export type ContactFormInput = z.input<typeof contactSchema>;
 export type ContactFormData = z.output<typeof contactSchema>;
+
+// ─── University ───────────────────────────────────────────────────────────────
+export const universitySchema = z.object({
+  name: z
+    .string()
+    .min(2, 'Name must be at least 2 characters')
+    .max(200, 'Name must be 200 characters or fewer'),
+  shortName: z
+    .string()
+    .max(20, 'Short name must be 20 characters or fewer')
+    .optional()
+    .transform((v) => (v === '' ? undefined : v)),
+  location: z
+    .string()
+    .max(200, 'Location must be 200 characters or fewer')
+    .optional()
+    .transform((v) => (v === '' ? undefined : v)),
+});
+
+export type UniversityFormInput = z.input<typeof universitySchema>;
+export type UniversityFormData = z.output<typeof universitySchema>;
 
 // ─── Property ─────────────────────────────────────────────────────────────────
 export const propertySchema = z.object({
@@ -101,9 +121,35 @@ export const propertySchema = z.object({
   contactId: z.string().uuid('Select a contact'),
   districtId: z.string().uuid('Select a district'),
   amenities: z.array(z.string()).optional(),
+  /** HOSTEL only */
+  universityId: z.string().uuid().optional().or(z.literal('')).transform((v) => (v === '' ? undefined : v)),
+  /** HOSTEL only */
+  approximateDistanceKm: z.preprocess(
+    (v) => (v === '' || v === undefined || Number.isNaN(Number(v)) ? undefined : Number(v)),
+    z.number().min(0).optional(),
+  ),
 });
 
 export type PropertyFormData = z.infer<typeof propertySchema>;
+
+// ─── Set Featured ─────────────────────────────────────────────────────────────
+export const setFeaturedSchema = z
+  .object({
+    isFeatured: z.boolean(),
+    featuredUntil: z.string().optional(),
+  })
+  .refine(
+    (d) => {
+      if (d.isFeatured && !d.featuredUntil) return false;
+      return true;
+    },
+    {
+      message: 'An expiry date is required when featuring a property',
+      path: ['featuredUntil'],
+    },
+  );
+
+export type SetFeaturedFormData = z.infer<typeof setFeaturedSchema>;
 
 // ─── Users ────────────────────────────────────────────────────────────────────
 const strongPassword = z
@@ -112,7 +158,6 @@ const strongPassword = z
   .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
   .regex(/\d/, 'Password must contain at least one number');
 
-// ─── Users ────────────────────────────────────────────────────────────────────
 export const createAdminSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Enter a valid email address'),

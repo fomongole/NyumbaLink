@@ -5,6 +5,7 @@ import {
   CreatePropertyPayload,
   UpdatePropertyPayload,
   PropertyFilters,
+  SetFeaturedPayload,
   PaginatedResponse,
 } from '@/types';
 
@@ -38,6 +39,11 @@ export const propertiesApi = {
 
   toggleStatus: async (id: string): Promise<Property> => {
     const { data } = await apiClient.patch<Property>(`/properties/${id}/toggle-status`);
+    return data;
+  },
+
+  setFeatured: async (id: string, payload: SetFeaturedPayload): Promise<Property> => {
+    const { data } = await apiClient.patch<Property>(`/properties/${id}/feature`, payload);
     return data;
   },
 

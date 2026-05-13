@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, X, SlidersHorizontal, ChevronDown } from 'lucide-react';
+import { Search, X, SlidersHorizontal, ChevronDown, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -10,6 +10,7 @@ import {
   SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { districtsApi } from '@/lib/api/districts.api';
+import { universitiesApi } from '@/lib/api/universities.api';
 import { PropertyFilters, PropertyType, PropertyStatus, BillingCycle } from '@/types';
 
 interface Props {
@@ -51,6 +52,11 @@ export default function PropertyFilterBar({ filters, onChange, onReset }: Props)
     queryFn: districtsApi.getAll,
   });
 
+  const { data: universities = [] } = useQuery({
+    queryKey: ['universities'],
+    queryFn: universitiesApi.getAll,
+  });
+
   const [searchInput, setSearchInput] = useState(filters.search ?? '');
 
   useEffect(() => {
@@ -58,19 +64,42 @@ export default function PropertyFilterBar({ filters, onChange, onReset }: Props)
       onChange({ ...filters, search: searchInput || undefined });
     }, 300);
     return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
 
+  const isHostelSelected = filters.type === 'HOSTEL';
+
   const [advancedOpen, setAdvancedOpen] = useState(
-    !!(filters.billingCycle || filters.minPrice || filters.maxPrice || filters.numberOfRooms),
+    !!(
+      filters.billingCycle ||
+      filters.minPrice ||
+      filters.maxPrice ||
+      filters.numberOfRooms ||
+      filters.universityId ||
+      filters.isFeatured !== undefined
+    ),
   );
 
   const advancedCount = [
-    filters.billingCycle, filters.minPrice, filters.maxPrice, filters.numberOfRooms,
+    filters.billingCycle,
+    filters.minPrice,
+    filters.maxPrice,
+    filters.numberOfRooms,
+    filters.universityId,
+    filters.isFeatured !== undefined ? true : undefined,
   ].filter(Boolean).length;
 
   const hasAnyActiveFilter =
-    filters.search || filters.districtId || filters.type || filters.status ||
-    filters.billingCycle || filters.minPrice || filters.maxPrice || filters.numberOfRooms;
+    filters.search ||
+    filters.districtId ||
+    filters.type ||
+    filters.status ||
+    filters.billingCycle ||
+    filters.minPrice ||
+    filters.maxPrice ||
+    filters.numberOfRooms ||
+    filters.universityId ||
+    filters.isFeatured !== undefined;
 
   return (
     <div className="space-y-2">
@@ -88,7 +117,9 @@ export default function PropertyFilterBar({ filters, onChange, onReset }: Props)
 
         <Select
           value={filters.districtId ?? UNSET}
-          onValueChange={(v) => onChange({ ...filters, districtId: v === UNSET ? undefined : v })}
+          onValueChange={(v) =>
+            onChange({ ...filters, districtId: v === UNSET ? undefined : v })
+          }
         >
           <SelectTrigger className="h-9 w-40 text-sm">
             <SelectValue placeholder="District" />
@@ -104,7 +135,12 @@ export default function PropertyFilterBar({ filters, onChange, onReset }: Props)
         <Select
           value={filters.type ?? UNSET}
           onValueChange={(v) =>
-            onChange({ ...filters, type: v === UNSET ? undefined : (v as PropertyType) })
+            onChange({
+              ...filters,
+              type: v === UNSET ? undefined : (v as PropertyType),
+              // Clear university filter when switching away from HOSTEL
+              universityId: v !== 'HOSTEL' ? undefined : filters.universityId,
+            })
           }
         >
           <SelectTrigger className="h-9 w-44 text-sm">
@@ -121,7 +157,10 @@ export default function PropertyFilterBar({ filters, onChange, onReset }: Props)
         <Select
           value={filters.status ?? UNSET}
           onValueChange={(v) =>
-            onChange({ ...filters, status: v === UNSET ? undefined : (v as PropertyStatus) })
+            onChange({
+              ...filters,
+              status: v === UNSET ? undefined : (v as PropertyStatus),
+            })
           }
         >
           <SelectTrigger className="h-9 w-36 text-sm">
@@ -174,10 +213,64 @@ export default function PropertyFilterBar({ filters, onChange, onReset }: Props)
       {/* ── Row 2: Advanced filters (collapsible) ── */}
       {advancedOpen && (
         <div className="flex flex-wrap gap-2 items-center pt-2.5 border-t border-gray-100">
+
+          {/* University filter — only meaningful for hostels */}
+          {(isHostelSelected || !filters.type) && universities.length > 0 && (
+            <Select
+              value={filters.universityId ?? UNSET}
+              onValueChange={(v) =>
+                onChange({ ...filters, universityId: v === UNSET ? undefined : v })
+              }
+            >
+              <SelectTrigger className="h-9 w-52 text-sm">
+                <GraduationCap className="h-3.5 w-3.5 mr-1.5 text-gray-400" />
+                <SelectValue placeholder="Any University" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={UNSET}>Any University</SelectItem>
+                {universities.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.shortName ? `${u.shortName} — ` : ''}{u.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {/* Featured filter */}
+          <Select
+            value={
+              filters.isFeatured === true
+                ? 'true'
+                : filters.isFeatured === false
+                ? 'false'
+                : UNSET
+            }
+            onValueChange={(v) =>
+              onChange({
+                ...filters,
+                isFeatured:
+                  v === UNSET ? undefined : v === 'true' ? true : false,
+              })
+            }
+          >
+            <SelectTrigger className="h-9 w-40 text-sm">
+              <SelectValue placeholder="Featured?" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={UNSET}>All Listings</SelectItem>
+              <SelectItem value="true">Featured Only</SelectItem>
+              <SelectItem value="false">Standard Only</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Select
             value={filters.billingCycle ?? UNSET}
             onValueChange={(v) =>
-              onChange({ ...filters, billingCycle: v === UNSET ? undefined : (v as BillingCycle) })
+              onChange({
+                ...filters,
+                billingCycle: v === UNSET ? undefined : (v as BillingCycle),
+              })
             }
           >
             <SelectTrigger className="h-9 w-36 text-sm">
@@ -194,7 +287,10 @@ export default function PropertyFilterBar({ filters, onChange, onReset }: Props)
           <Select
             value={filters.numberOfRooms?.toString() ?? UNSET}
             onValueChange={(v) =>
-              onChange({ ...filters, numberOfRooms: v === UNSET ? undefined : Number(v) })
+              onChange({
+                ...filters,
+                numberOfRooms: v === UNSET ? undefined : Number(v),
+              })
             }
           >
             <SelectTrigger className="h-9 w-32 text-sm">
@@ -221,7 +317,10 @@ export default function PropertyFilterBar({ filters, onChange, onReset }: Props)
               className="w-28 px-2.5 bg-transparent outline-none placeholder:text-gray-400 h-full text-sm"
               value={filters.minPrice ?? ''}
               onChange={(e) =>
-                onChange({ ...filters, minPrice: e.target.value ? Number(e.target.value) : undefined })
+                onChange({
+                  ...filters,
+                  minPrice: e.target.value ? Number(e.target.value) : undefined,
+                })
               }
             />
           </div>
@@ -237,7 +336,10 @@ export default function PropertyFilterBar({ filters, onChange, onReset }: Props)
               className="w-28 px-2.5 bg-transparent outline-none placeholder:text-gray-400 h-full text-sm"
               value={filters.maxPrice ?? ''}
               onChange={(e) =>
-                onChange({ ...filters, maxPrice: e.target.value ? Number(e.target.value) : undefined })
+                onChange({
+                  ...filters,
+                  maxPrice: e.target.value ? Number(e.target.value) : undefined,
+                })
               }
             />
           </div>

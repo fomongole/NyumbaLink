@@ -11,6 +11,7 @@ import {
   Images, Eye, MessageCircle, MapPin, Building2, User,
   Calendar, Car, Layers, BadgeCheck, DoorClosed,
   DollarSign, Star, Navigation, Hotel, CalendarClock,
+  GraduationCap, Footprints,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -22,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import PropertyFormSheet from '@/components/properties/PropertyFormSheet';
 import ImageUploadManager from '@/components/properties/ImageUploadManager';
+import SetFeaturedSheet from '@/components/properties/SetFeaturedSheet';
 import HostelRoomsPanel from '@/components/hostel-rooms/HostelRoomsPanel';
 import DeleteDialog from '@/components/shared/DeleteDialog';
 
@@ -31,33 +33,33 @@ import { BillingCycle, HotelCategory } from '@/types';
 
 const TYPE_LABELS: Record<string, string> = {
   RESIDENTIAL_HOUSE: 'Residential House',
-  APARTMENT:         'Apartment',
-  AIRBNB:            'AirBnB',
-  OFFICE_SPACE:      'Office Space',
-  BUSINESS_SPACE:    'Business Space',
-  HOSTEL:            'Hostel',
-  HOTEL_LODGE:       'Hotel / Lodge',
+  APARTMENT: 'Apartment',
+  AIRBNB: 'AirBnB',
+  OFFICE_SPACE: 'Office Space',
+  BUSINESS_SPACE: 'Business Space',
+  HOSTEL: 'Hostel',
+  HOTEL_LODGE: 'Hotel / Lodge',
 };
 
 const FURNISHING_LABELS: Record<string, string> = {
-  FURNISHED:      'Furnished',
+  FURNISHED: 'Furnished',
   SEMI_FURNISHED: 'Semi-Furnished',
-  UNFURNISHED:    'Unfurnished',
+  UNFURNISHED: 'Unfurnished',
 };
 
 const BILLING_LABELS: Record<BillingCycle, string> = {
-  DAILY:       'Daily',
-  MONTHLY:     'Monthly',
-  QUARTERLY:   'Quarterly (3 months)',
+  DAILY: 'Daily',
+  MONTHLY: 'Monthly',
+  QUARTERLY: 'Quarterly (3 months)',
   FOUR_MONTHS: '4 Months',
-  BIANNUAL:    'Biannual (6 months)',
-  ANNUAL:      'Annual (1 year)',
+  BIANNUAL: 'Biannual (6 months)',
+  ANNUAL: 'Annual (1 year)',
 };
 
 const HOTEL_CATEGORY_LABELS: Record<HotelCategory, string> = {
   ORDINARY: 'Ordinary',
-  VIP:      'VIP',
-  VVIP:     'VVIP',
+  VIP: 'VIP',
+  VVIP: 'VVIP',
 };
 
 export default function PropertyDetailPage({
@@ -72,6 +74,7 @@ export default function PropertyDetailPage({
   const [editOpen, setEditOpen] = useState(false);
   const [imagesOpen, setImagesOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [featuredOpen, setFeaturedOpen] = useState(false);
   const [activeImage, setActiveImage] = useState<string | null>(null);
 
   const { data: property, isLoading } = useQuery({
@@ -151,11 +154,17 @@ export default function PropertyDetailPage({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           {/* Breadcrumb */}
           <nav className="flex items-center gap-1.5 text-sm min-w-0">
-            <Link href="/" className="text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">
+            <Link
+              href="/"
+              className="text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap"
+            >
               Dashboard
             </Link>
             <ChevronRight className="h-3.5 w-3.5 text-gray-300 flex-shrink-0" />
-            <Link href="/properties" className="text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap">
+            <Link
+              href="/properties"
+              className="text-gray-400 hover:text-gray-600 transition-colors whitespace-nowrap"
+            >
               Properties
             </Link>
             <ChevronRight className="h-3.5 w-3.5 text-gray-300 flex-shrink-0" />
@@ -164,10 +173,29 @@ export default function PropertyDetailPage({
 
           {/* Action buttons */}
           <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFeaturedOpen(true)}
+              className={
+                property.isFeatured
+                  ? 'border-yellow-300 bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
+                  : ''
+              }
+            >
+              <Star
+                className={`h-4 w-4 mr-1.5 ${
+                  property.isFeatured ? 'fill-yellow-500 text-yellow-500' : 'text-gray-400'
+                }`}
+              />
+              {property.isFeatured ? 'Featured' : 'Set Featured'}
+            </Button>
+
             <Button variant="outline" size="sm" onClick={() => setImagesOpen(true)}>
               <Images className="h-4 w-4 mr-1.5" />
               Images ({property.images.length}/4)
             </Button>
+
             {!isHostel && (
               <Button
                 variant="outline"
@@ -176,22 +204,51 @@ export default function PropertyDetailPage({
                 disabled={toggleMutation.isPending}
               >
                 {property.status === 'AVAILABLE' ? (
-                  <><ToggleRight className="h-4 w-4 mr-1.5 text-green-600" />Mark Rented</>
+                  <>
+                    <ToggleRight className="h-4 w-4 mr-1.5 text-green-600" />
+                    Mark Rented
+                  </>
                 ) : (
-                  <><ToggleLeft className="h-4 w-4 mr-1.5" />Mark Available</>
+                  <>
+                    <ToggleLeft className="h-4 w-4 mr-1.5" />
+                    Mark Available
+                  </>
                 )}
               </Button>
             )}
+
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
               <Pencil className="h-4 w-4 mr-1.5" />
               Edit
             </Button>
+
             <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
               <Trash2 className="h-4 w-4 mr-1.5" />
               Delete
             </Button>
           </div>
         </div>
+
+        {/* Featured expiry banner */}
+        {property.isFeatured && property.featuredUntil && (
+          <div className="flex items-center gap-2 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-2.5 text-sm text-yellow-700">
+            <Star className="h-4 w-4 fill-yellow-500 text-yellow-500 shrink-0" />
+            <span>
+              <strong>Featured listing</strong> — expires{' '}
+              {new Date(property.featuredUntil).toLocaleDateString('en-UG', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+              })}
+            </span>
+            <button
+              onClick={() => setFeaturedOpen(true)}
+              className="ml-auto text-xs underline underline-offset-2 hover:text-yellow-900"
+            >
+              Manage
+            </button>
+          </div>
+        )}
 
         {/* Tabs */}
         <Tabs defaultValue="overview">
@@ -234,8 +291,15 @@ export default function PropertyDetailPage({
                       >
                         {property.status === 'AVAILABLE' ? 'Available' : 'Rented Out'}
                       </Badge>
+                      {property.isFeatured && (
+                        <Badge className="bg-yellow-500 hover:bg-yellow-600 text-white text-sm px-3 py-1 shadow-md gap-1">
+                          <Star className="h-3 w-3 fill-white" />
+                          Featured
+                        </Badge>
+                      )}
                     </div>
                   </div>
+
                   {property.images.length > 1 && (
                     <div className="flex gap-2 p-3 overflow-x-auto bg-gray-50">
                       {property.images.map((img) => (
@@ -306,7 +370,9 @@ export default function PropertyDetailPage({
                         </p>
                       )}
                       {isHostel && (
-                        <p className="text-xs text-gray-400 mt-1">Individual rooms may vary</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Individual rooms may vary
+                        </p>
                       )}
                     </div>
 
@@ -320,8 +386,11 @@ export default function PropertyDetailPage({
                     <div className="grid grid-cols-2 gap-3 pt-2 border-t">
                       {!isHostel && (
                         <div className="flex items-center gap-2 col-span-2">
-                           <DoorClosed className="h-4 w-4 text-gray-400" />
-                           <span className="text-sm">{property.numberOfRooms} Room{property.numberOfRooms !== 1 ? 's' : ''}</span>
+                          <DoorClosed className="h-4 w-4 text-gray-400" />
+                          <span className="text-sm">
+                            {property.numberOfRooms} Room
+                            {property.numberOfRooms !== 1 ? 's' : ''}
+                          </span>
                         </div>
                       )}
                       <div className="flex items-center gap-2">
@@ -341,19 +410,26 @@ export default function PropertyDetailPage({
                     <CardTitle className="text-base">Property Details</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <DetailRow icon={Building2} label="Type" value={TYPE_LABELS[property.type] ?? property.type} />
-                    
+                    <DetailRow
+                      icon={Building2}
+                      label="Type"
+                      value={TYPE_LABELS[property.type] ?? property.type}
+                    />
+
                     {property.hotelCategory && (
-                       <DetailRow
-                         icon={Star}
-                         label="Category"
-                         value={HOTEL_CATEGORY_LABELS[property.hotelCategory] ?? property.hotelCategory}
-                       />
+                      <DetailRow
+                        icon={Star}
+                        label="Category"
+                        value={
+                          HOTEL_CATEGORY_LABELS[property.hotelCategory] ??
+                          property.hotelCategory
+                        }
+                      />
                     )}
-                    
+
                     <DetailRow icon={MapPin} label="District" value={property.district.name} />
                     <DetailRow icon={MapPin} label="Area" value={property.area} />
-                    
+
                     {property.address && (
                       <DetailRow icon={MapPin} label="Address" value={property.address} />
                     )}
@@ -375,8 +451,33 @@ export default function PropertyDetailPage({
                       </div>
                     )}
 
+                    {isHostel && property.university && (
+                      <>
+                        <DetailRow
+                          icon={GraduationCap}
+                          label="Near University"
+                          value={
+                            property.university.shortName
+                              ? `${property.university.shortName} — ${property.university.name}`
+                              : property.university.name
+                          }
+                        />
+                        {property.approximateDistanceKm != null && (
+                          <DetailRow
+                            icon={Footprints}
+                            label="Distance"
+                            value={`${Number(property.approximateDistanceKm).toFixed(1)} km to campus`}
+                          />
+                        )}
+                      </>
+                    )}
+
                     {property.furnishing && (
-                      <DetailRow icon={BadgeCheck} label="Furnishing" value={FURNISHING_LABELS[property.furnishing]} />
+                      <DetailRow
+                        icon={BadgeCheck}
+                        label="Furnishing"
+                        value={FURNISHING_LABELS[property.furnishing]}
+                      />
                     )}
 
                     {property.billingCycle && (
@@ -392,7 +493,21 @@ export default function PropertyDetailPage({
                         icon={Calendar}
                         label="Available From"
                         value={new Date(property.availableFrom).toLocaleDateString('en-UG', {
-                          day: 'numeric', month: 'long', year: 'numeric',
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                      />
+                    )}
+
+                    {property.isFeatured && property.featuredUntil && (
+                      <DetailRow
+                        icon={Star}
+                        label="Featured Until"
+                        value={new Date(property.featuredUntil).toLocaleDateString('en-UG', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
                         })}
                       />
                     )}
@@ -413,7 +528,7 @@ export default function PropertyDetailPage({
                   </CardContent>
                 </Card>
 
-                {/* Contact card (replaces Landlord) */}
+                {/* Contact card */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-base">
@@ -434,7 +549,9 @@ export default function PropertyDetailPage({
                       <p className="text-sm text-gray-600">{property.contact.email}</p>
                     )}
                     {property.contact.whatsapp && (
-                      <p className="text-sm text-gray-600">WhatsApp: {property.contact.whatsapp}</p>
+                      <p className="text-sm text-gray-600">
+                        WhatsApp: {property.contact.whatsapp}
+                      </p>
                     )}
                     <Link href={`/contacts/${property.contact.id}`}>
                       <Button variant="outline" size="sm" className="w-full mt-2">
@@ -467,6 +584,12 @@ export default function PropertyDetailPage({
         property={property}
       />
 
+      <SetFeaturedSheet
+        open={featuredOpen}
+        onClose={() => setFeaturedOpen(false)}
+        property={property}
+      />
+
       <DeleteDialog
         open={deleteOpen}
         onClose={() => setDeleteOpen(false)}
@@ -480,9 +603,13 @@ export default function PropertyDetailPage({
 }
 
 function DetailRow({
-  icon: Icon, label, value,
+  icon: Icon,
+  label,
+  value,
 }: {
-  icon: React.ElementType; label: string; value: string;
+  icon: React.ElementType;
+  label: string;
+  value: string;
 }) {
   return (
     <div className="flex items-start gap-2.5">

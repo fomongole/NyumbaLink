@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Plus, Pencil, Trash2, Images, ToggleLeft,
-  ToggleRight, Eye, Download, MoreHorizontal,
+  ToggleRight, Eye, Download, MoreHorizontal, Star,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -267,6 +267,12 @@ export default function PropertiesTable() {
                                 {property.title}
                               </Link>
                               <p className="text-xs text-gray-500">{property.area}</p>
+                              {property.isFeatured && (
+                                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-yellow-600 bg-yellow-50 border border-yellow-200 rounded px-1.5 py-0.5 mt-0.5">
+                                  <Star className="h-2.5 w-2.5 fill-yellow-500 text-yellow-500" />
+                                  Featured
+                                </span>
+                              )}
                             </div>
                           </div>
                         </TableCell>

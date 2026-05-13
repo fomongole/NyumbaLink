@@ -12,11 +12,19 @@ export interface PropertyFieldConfig {
   showBillingCycle: boolean;
   allowedBillingCycles: BillingCycle[];
   showSecurityDeposit: boolean;
-  
   /** Sub-units managed via the HostelRooms module */
   isHostel: boolean;
   /** Supports DAILY billing (Hotel/Lodge and AirBnB) */
   isHotelLodge: boolean;
+  /**
+   * HOSTEL only: the nearby university this hostel primarily serves.
+   * Enables "find hostels near Kyambogo" filtering.
+   */
+  showUniversity: boolean;
+  /**
+   * HOSTEL only: admin-entered walking distance to the linked university (km).
+   */
+  showApproximateDistanceKm: boolean;
 }
 
 export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = {
@@ -25,13 +33,15 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     showTotalRooms: false,
     showHotelCategory: false,
     showParking: true,
-    showFloor: false,           // houses are ground-level
+    showFloor: false,
     showFurnishing: true,
     showBillingCycle: true,
     allowedBillingCycles: ['MONTHLY', 'QUARTERLY', 'BIANNUAL', 'ANNUAL'],
     showSecurityDeposit: true,
     isHostel: false,
     isHotelLodge: false,
+    showUniversity: false,
+    showApproximateDistanceKm: false,
   },
   APARTMENT: {
     showNumberOfRooms: true,
@@ -45,6 +55,8 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     showSecurityDeposit: true,
     isHostel: false,
     isHotelLodge: false,
+    showUniversity: false,
+    showApproximateDistanceKm: false,
   },
   AIRBNB: {
     showNumberOfRooms: true,
@@ -58,6 +70,8 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     showSecurityDeposit: true,
     isHostel: false,
     isHotelLodge: false,
+    showUniversity: false,
+    showApproximateDistanceKm: false,
   },
   OFFICE_SPACE: {
     showNumberOfRooms: true,
@@ -71,6 +85,8 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     showSecurityDeposit: true,
     isHostel: false,
     isHotelLodge: false,
+    showUniversity: false,
+    showApproximateDistanceKm: false,
   },
   BUSINESS_SPACE: {
     showNumberOfRooms: true,
@@ -84,6 +100,8 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     showSecurityDeposit: true,
     isHostel: false,
     isHotelLodge: false,
+    showUniversity: false,
+    showApproximateDistanceKm: false,
   },
   HOSTEL: {
     showNumberOfRooms: false,
@@ -92,11 +110,13 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     showParking: true,
     showFloor: true,
     showFurnishing: false,
-    showBillingCycle: false,    // billing cycle lives on each HostelRoom
+    showBillingCycle: false,
     allowedBillingCycles: [],
     showSecurityDeposit: false,
     isHostel: true,
     isHotelLodge: false,
+    showUniversity: true,        // ← hostel can be linked to a nearby university
+    showApproximateDistanceKm: true, // ← walking distance to that university
   },
   HOTEL_LODGE: {
     showNumberOfRooms: true,
@@ -110,6 +130,8 @@ export const PROPERTY_FIELD_CONFIG: Record<PropertyType, PropertyFieldConfig> = 
     showSecurityDeposit: false,
     isHostel: false,
     isHotelLodge: true,
+    showUniversity: false,
+    showApproximateDistanceKm: false,
   },
 };
 

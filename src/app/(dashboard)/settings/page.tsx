@@ -2,9 +2,10 @@
 
 import Header from '@/components/layout/Header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MapPin, User } from 'lucide-react';
+import { GraduationCap, MapPin, User } from 'lucide-react';
 import AccountTab from '@/components/settings/AccountTab';
 import DistrictsTab from '@/components/settings/DistrictsTab';
+import UniversitiesTab from '@/components/settings/UniversitiesTab';
 
 export default function SettingsPage() {
   return (
@@ -22,6 +23,10 @@ export default function SettingsPage() {
               <MapPin className="h-3.5 w-3.5" />
               Districts
             </TabsTrigger>
+            <TabsTrigger value="universities" className="gap-1.5 data-[state=active]:bg-white">
+              <GraduationCap className="h-3.5 w-3.5" />
+              Universities
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="account">
@@ -31,6 +36,12 @@ export default function SettingsPage() {
           <TabsContent value="districts">
             <div className="max-w-3xl">
               <DistrictsTab />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="universities">
+            <div className="max-w-4xl">
+              <UniversitiesTab />
             </div>
           </TabsContent>
         </Tabs>

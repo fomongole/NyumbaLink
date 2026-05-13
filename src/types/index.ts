@@ -50,8 +50,25 @@ export interface CreateDistrictPayload {
 
 export type UpdateDistrictPayload = Partial<CreateDistrictPayload>;
 
+// ─── University ───────────────────────────────────────────────────────────────
+export interface University {
+  id: string;
+  name: string;
+  shortName: string | null;
+  location: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateUniversityPayload {
+  name: string;
+  shortName?: string;
+  location?: string;
+}
+
+export type UpdateUniversityPayload = Partial<CreateUniversityPayload>;
+
 // ─── Contact (replaces Landlord) ─────────────────────────────────────────────
-/** OWNER = the person who owns the property. AGENT = broker / property manager. */
 export type ContactRole = 'OWNER' | 'AGENT';
 
 export interface Contact {
@@ -103,10 +120,6 @@ export type HotelCategory = 'ORDINARY' | 'VIP' | 'VVIP';
 export type PropertyStatus = 'AVAILABLE' | 'RENTED';
 export type FurnishingStatus = 'FURNISHED' | 'SEMI_FURNISHED' | 'UNFURNISHED';
 
-/**
- * Replaces the old LeaseTerm.
- * Not every cycle is valid for every property type — see PROPERTY_FIELD_CONFIG.
- */
 export type BillingCycle =
   | 'DAILY'
   | 'MONTHLY'
@@ -145,6 +158,13 @@ export interface Property {
   amenities: string[];
   viewCount: number;
   enquiryCount: number;
+  /** Featured listing fields */
+  isFeatured: boolean;
+  featuredUntil?: string | null;
+  /** HOSTEL only — the nearby university */
+  university?: University | null;
+  /** HOSTEL only — walking distance to university in km */
+  approximateDistanceKm?: number | null;
   /** The owner or agent responsible for this property */
   contact: Contact;
   district: District;
@@ -175,9 +195,18 @@ export interface CreatePropertyPayload {
   contactId: string;
   districtId: string;
   amenities?: string[];
+  /** HOSTEL only */
+  universityId?: string;
+  /** HOSTEL only */
+  approximateDistanceKm?: number;
 }
 
 export type UpdatePropertyPayload = Partial<CreatePropertyPayload>;
+
+export interface SetFeaturedPayload {
+  isFeatured: boolean;
+  featuredUntil?: string;
+}
 
 export interface PropertyFilters {
   districtId?: string;
@@ -188,6 +217,10 @@ export interface PropertyFilters {
   maxPrice?: number;
   numberOfRooms?: number;
   search?: string;
+  /** HOSTEL only — filter by nearby university */
+  universityId?: string;
+  /** Filter to only featured listings */
+  isFeatured?: boolean;
   lat?: number;
   lng?: number;
   radius?: number;
@@ -199,6 +232,7 @@ export interface PropertyStats {
   total: number;
   available: number;
   rented: number;
+  featured: number;
   occupancyRate: number;
   addedThisWeek: number;
   topViewed: Property[];
@@ -377,7 +411,8 @@ export type AuditEntity =
   | 'HOSTEL_ROOM'
   | 'BOOKING'
   | 'DISTRICT'
-  | 'COMPLAINT';
+  | 'COMPLAINT'
+  | 'UNIVERSITY';
 
 export interface AuditLog {
   id: string;
