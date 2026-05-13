@@ -438,7 +438,7 @@ export default function PropertyFormSheet({ open, onClose, property }: Props) {
                     <SectionLabel>University Association</SectionLabel>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <Label>Nearby University</Label>
+                        <Label>Associated University</Label>
                         <Select
                           value={watch('universityId') ?? UNSET}
                           onValueChange={(v) =>
