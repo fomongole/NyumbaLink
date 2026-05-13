@@ -36,6 +36,7 @@ import {
 import PropertyFormSheet from './PropertyFormSheet';
 import ImageUploadManager from './ImageUploadManager';
 import PropertyFilterBar from './PropertyFilterBar';
+import SetFeaturedSheet from './SetFeaturedSheet';
 import DeleteDialog from '@/components/shared/DeleteDialog';
 import { propertiesApi } from '@/lib/api/properties.api';
 import { Property, PropertyFilters, BillingCycle } from '@/types';
@@ -107,6 +108,7 @@ export default function PropertiesTable() {
   const [formOpen, setFormOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [imagesOpen, setImagesOpen] = useState(false);
+  const [featuredOpen, setFeaturedOpen] = useState(false);
   const [selected, setSelected] = useState<Property | null>(null);
 
   const serverFilters: PropertyFilters = {
@@ -117,6 +119,8 @@ export default function PropertiesTable() {
     minPrice:      filters.minPrice,
     maxPrice:      filters.maxPrice,
     numberOfRooms: filters.numberOfRooms,
+    universityId:  filters.universityId,  // ← fixed: was missing
+    isFeatured:    filters.isFeatured,    // ← fixed: was missing
     search:        filters.search,
     page,
     limit: PAGE_SIZE,
@@ -154,6 +158,7 @@ export default function PropertiesTable() {
   const handleEdit = (p: Property) => { setSelected(p); setFormOpen(true); };
   const handleDelete = (p: Property) => { setSelected(p); setDeleteOpen(true); };
   const handleImages = (p: Property) => { setSelected(p); setImagesOpen(true); };
+  const handleSetFeatured = (p: Property) => { setSelected(p); setFeaturedOpen(true); };
 
   const handleFiltersChange = (newFilters: typeof filters) => {
     setPage(1);
@@ -375,6 +380,19 @@ export default function PropertiesTable() {
                                     </>
                                   )}
                                 </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => handleSetFeatured(property)}
+                                  className="gap-2 cursor-pointer"
+                                >
+                                  <Star
+                                    className={`h-3.5 w-3.5 ${
+                                      property.isFeatured
+                                        ? 'fill-yellow-500 text-yellow-500'
+                                        : 'text-gray-500'
+                                    }`}
+                                  />
+                                  {property.isFeatured ? 'Manage featured' : 'Set as featured'}
+                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   onClick={() => handleDelete(property)}
@@ -423,6 +441,14 @@ export default function PropertiesTable() {
         <ImageUploadManager
           open={imagesOpen}
           onClose={() => { setImagesOpen(false); setSelected(null); }}
+          property={selected}
+        />
+      )}
+
+      {selected && (
+        <SetFeaturedSheet
+          open={featuredOpen}
+          onClose={() => { setFeaturedOpen(false); setSelected(null); }}
           property={selected}
         />
       )}
