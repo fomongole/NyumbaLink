@@ -455,7 +455,7 @@ export default function PropertyDetailPage({
                       <>
                         <DetailRow
                           icon={GraduationCap}
-                          label="Near University"
+                          label="Associated University"
                           value={
                             property.university.shortName
                               ? `${property.university.shortName} — ${property.university.name}`
