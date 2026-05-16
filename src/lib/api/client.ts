@@ -21,6 +21,7 @@ apiClient.interceptors.response.use(
   (error) => {
     const url = error.config?.url ?? '';
     const isLoginRequest = url.includes('/auth/admin/login');
+    // Allow 401s for login and password change endpoints without redirecting to the login page, since those are expected to fail when credentials are wrong or token is expired during password change
     const isPasswordChangeRequest = url.includes('/users/me/password');
 
     if (
