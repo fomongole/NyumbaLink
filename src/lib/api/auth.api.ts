@@ -4,7 +4,7 @@ import { AuthResponse, LoginCredentials } from '@/types';
 
 export const authApi = {
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
-    const { data } = await apiClient.post<AuthResponse>('/auth/login', credentials);
+    const { data } = await apiClient.post<AuthResponse>('/auth/admin/login', credentials);
 
     if (data.accessToken) {
       Cookies.set('token', data.accessToken, { expires: 7 });
