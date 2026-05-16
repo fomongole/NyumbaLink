@@ -20,7 +20,7 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     const url = error.config?.url ?? '';
-    const isLoginRequest = url.includes('/auth/login');
+    const isLoginRequest = url.includes('/auth/admin/login');
     const isPasswordChangeRequest = url.includes('/users/me/password');
 
     if (
