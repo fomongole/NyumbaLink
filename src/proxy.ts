@@ -1,28 +1,23 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PUBLIC_ROUTES = ['/login'];
-const PUBLIC_STATIC_PATHS = [
-  '/.well-known/assetlinks.json',
-  '/.well-known/apple-app-site-association'
-];
-
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('token')?.value;
-  const loginTimestamp = request.cookies.get('loginTimestamp')?.value;
   const { pathname } = request.nextUrl;
 
-  // Allow .well-known files (critical for deep links)
-  if (PUBLIC_STATIC_PATHS.some(path => pathname.startsWith(path))) {
+  // ←←← CRITICAL: Bypass middleware for .well-known files
+  if (pathname.startsWith('/.well-known/')) {
     return NextResponse.next();
   }
 
+  const token = request.cookies.get('token')?.value;
+  const loginTimestamp = request.cookies.get('loginTimestamp')?.value;
+
+  const PUBLIC_ROUTES = ['/login'];
+
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
 
-  const isSessionExpired =
-    token &&
-    (!loginTimestamp ||
-      Date.now() - parseInt(loginTimestamp, 10) > 12 * 60 * 60 * 1000);
+  const isSessionExpired = token && 
+    (!loginTimestamp || Date.now() - parseInt(loginTimestamp, 10) > 12 * 60 * 60 * 1000);
 
   if (isSessionExpired) {
     const response = NextResponse.redirect(new URL('/login', request.url));
@@ -45,6 +40,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|svg|jpg|jpeg|gif|webp|ico)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:png|svg|jpg|jpeg|gif|webp|ico)|\\.well-known).*)',
   ],
 };
