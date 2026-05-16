@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // ←←← CRITICAL: Bypass middleware for .well-known files
+  // Bypass for .well-known files (important for assetlinks.json)
   if (pathname.startsWith('/.well-known/')) {
     return NextResponse.next();
   }
