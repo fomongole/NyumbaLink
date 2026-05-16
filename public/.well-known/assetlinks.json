@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.rentora.app",
+      "sha256_cert_fingerprints": [
+        "89:C8:13:51:2A:30:9E:FA:2B:4D:F4:DC:24:AE:73:06:DB:0F:9E:61:9A:25:60:37:5E:1B:75:90:0B:03:9E:7D"
+      ]
+    }
+  }
+]
