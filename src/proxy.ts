@@ -2,19 +2,27 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 const PUBLIC_ROUTES = ['/login'];
-const MAX_SESSION_MS = 12 * 60 * 60 * 1_000; // 12 hours
+const PUBLIC_STATIC_PATHS = [
+  '/.well-known/assetlinks.json',
+  '/.well-known/apple-app-site-association'
+];
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
   const loginTimestamp = request.cookies.get('loginTimestamp')?.value;
   const { pathname } = request.nextUrl;
+
+  // Allow .well-known files (critical for deep links)
+  if (PUBLIC_STATIC_PATHS.some(path => pathname.startsWith(path))) {
+    return NextResponse.next();
+  }
+
   const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
 
-  // If a token exists but the session is too old (or timestamp is missing), force re-login
   const isSessionExpired =
     token &&
     (!loginTimestamp ||
-      Date.now() - parseInt(loginTimestamp, 10) > MAX_SESSION_MS);
+      Date.now() - parseInt(loginTimestamp, 10) > 12 * 60 * 60 * 1000);
 
   if (isSessionExpired) {
     const response = NextResponse.redirect(new URL('/login', request.url));
