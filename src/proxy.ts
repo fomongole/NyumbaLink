@@ -4,17 +4,21 @@ import type { NextRequest } from 'next/server';
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Bypass for .well-known files (important for assetlinks.json)
-  if (pathname.startsWith('/.well-known/')) {
+  // === PUBLIC ROUTES (no login required) ===
+  const PUBLIC_PATHS = [
+    '/.well-known/',           // For deep linking
+    '/p/',                     
+    '/login',
+  ];
+
+  // Allow public paths
+  if (PUBLIC_PATHS.some(path => pathname.startsWith(path))) {
     return NextResponse.next();
   }
 
+  // === Protected routes below ===
   const token = request.cookies.get('token')?.value;
   const loginTimestamp = request.cookies.get('loginTimestamp')?.value;
-
-  const PUBLIC_ROUTES = ['/login'];
-
-  const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
 
   const isSessionExpired = token && 
     (!loginTimestamp || Date.now() - parseInt(loginTimestamp, 10) > 12 * 60 * 60 * 1000);
@@ -27,12 +31,8 @@ export function proxy(request: NextRequest) {
     return response;
   }
 
-  if (!token && !isPublicRoute) {
+  if (!token) {
     return NextResponse.redirect(new URL('/login', request.url));
-  }
-
-  if (token && isPublicRoute) {
-    return NextResponse.redirect(new URL('/', request.url));
   }
 
   return NextResponse.next();
