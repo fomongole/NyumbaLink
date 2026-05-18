@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, X, Building2, ZoomIn } from 'lucide-react';
 
 interface PropertyImage {
@@ -174,70 +175,76 @@ export default function PropertyImageGallery({ images, title, isAvailable, isFea
         )}
       </div>
 
-      {/* ── Lightbox ── */}
-      {lightboxOpen && (
+      {/* ── Lightbox — mounted via portal so it escapes any stacking context ── */}
+      {lightboxOpen && createPortal(
         <div
-          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+          className="fixed inset-0 z-[9999] bg-black flex flex-col"
           onClick={() => setLightboxOpen(false)}
         >
-          {/* Close */}
-          <button
-            className="absolute top-4 right-4 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-2 z-10 transition-colors"
-            onClick={() => setLightboxOpen(false)}
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </button>
-
-          {/* Counter */}
-          <span className="absolute top-4 left-1/2 -translate-x-1/2 text-white/70 text-sm tabular-nums">
-            {lightboxIndex + 1} / {total}
-          </span>
-
-          {/* Prev */}
-          {total > 1 && (
+          {/* ── Top bar: counter + close ── */}
+          <div className="flex items-center justify-between px-4 py-3 shrink-0" onClick={(e) => e.stopPropagation()}>
+            <span className="text-white/60 text-sm tabular-nums">
+              {lightboxIndex + 1} / {total}
+            </span>
             <button
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-3 z-10 transition-colors"
-              onClick={(e) => { e.stopPropagation(); setLightboxIndex((i) => (i - 1 + total) % total); }}
-              aria-label="Previous"
+              className="text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-2 transition-colors"
+              onClick={() => setLightboxOpen(false)}
+              aria-label="Close"
             >
-              <ChevronLeft className="h-6 w-6" />
+              <X className="h-5 w-5" />
             </button>
-          )}
-
-          {/* Image */}
-          <div
-            className="relative w-full max-w-5xl mx-16 aspect-video"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Image
-              src={images[lightboxIndex].url}
-              alt={`${title} — image ${lightboxIndex + 1}`}
-              fill
-              className="object-contain"
-              sizes="100vw"
-              priority
-            />
           </div>
 
-          {/* Next */}
-          {total > 1 && (
-            <button
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-3 z-10 transition-colors"
-              onClick={(e) => { e.stopPropagation(); setLightboxIndex((i) => (i + 1) % total); }}
-              aria-label="Next"
-            >
-              <ChevronRight className="h-6 w-6" />
-            </button>
-          )}
+          {/* ── Image area — fills all available vertical space ── */}
+          <div className="relative flex-1 flex items-center justify-center min-h-0">
+            {/* Prev */}
+            {total > 1 && (
+              <button
+                className="absolute left-3 z-10 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-3 transition-colors"
+                onClick={(e) => { e.stopPropagation(); setLightboxIndex((i) => (i - 1 + total) % total); }}
+                aria-label="Previous"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+            )}
 
-          {/* Thumbnail strip */}
+            {/* The image fills height; object-contain keeps aspect ratio without any forced container ratio */}
+            <div
+              className="relative w-full h-full px-16"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Image
+                src={images[lightboxIndex].url}
+                alt={`${title} — image ${lightboxIndex + 1}`}
+                fill
+                className="object-contain"
+                sizes="100vw"
+                priority
+              />
+            </div>
+
+            {/* Next */}
+            {total > 1 && (
+              <button
+                className="absolute right-3 z-10 text-white/80 hover:text-white bg-white/10 hover:bg-white/20 rounded-full p-3 transition-colors"
+                onClick={(e) => { e.stopPropagation(); setLightboxIndex((i) => (i + 1) % total); }}
+                aria-label="Next"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            )}
+          </div>
+
+          {/* ── Thumbnail strip ── */}
           {total > 1 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 overflow-x-auto max-w-[90vw] px-2">
+            <div
+              className="shrink-0 flex gap-2 justify-center overflow-x-auto px-4 py-3"
+              onClick={(e) => e.stopPropagation()}
+            >
               {images.map((img, idx) => (
                 <button
                   key={img.id}
-                  onClick={(e) => { e.stopPropagation(); setLightboxIndex(idx); }}
+                  onClick={() => setLightboxIndex(idx)}
                   className={`relative flex-shrink-0 rounded-md overflow-hidden transition-all ${
                     idx === lightboxIndex
                       ? 'ring-2 ring-white opacity-100'
@@ -251,7 +258,7 @@ export default function PropertyImageGallery({ images, title, isAvailable, isFea
             </div>
           )}
         </div>
-      )}
+      , document.body)}
     </>
   );
 }
