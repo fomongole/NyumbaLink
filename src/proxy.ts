@@ -6,9 +6,11 @@ export function proxy(request: NextRequest) {
 
   // === PUBLIC ROUTES (no login required) ===
   const PUBLIC_PATHS = [
-    '/.well-known/',           // For deep linking
-    '/p/',                     
+    '/.well-known/',
+    '/p/',
     '/login',
+    '/terms',
+    '/privacy',
   ];
 
   // Allow public paths
