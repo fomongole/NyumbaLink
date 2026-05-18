@@ -1,4 +1,3 @@
-// src/components/properties/ImageUploadManager.tsx
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -23,6 +22,9 @@ interface FilePreview {
   file: File;
   objectUrl: string;
 }
+
+const MAX_FILE_SIZE_MB = 2;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 export default function ImageUploadManager({ open, onClose, property, inline = false }: Props) {
   const queryClient = useQueryClient();
@@ -60,7 +62,20 @@ export default function ImageUploadManager({ open, onClose, property, inline = f
       setPreviews([]);
       if (fileInputRef.current) fileInputRef.current.value = '';
     },
-    onError: () => toast.error('Failed to upload images.'),
+    onError: (err: any) => {
+      const status = err?.response?.status;
+      const serverMsg = err?.response?.data?.message;
+
+      if (status === 413) {
+        toast.error(
+          `Images too large. Each file must be under ${MAX_FILE_SIZE_MB}MB. Try compressing them first.`,
+        );
+      } else if (serverMsg) {
+        toast.error(Array.isArray(serverMsg) ? serverMsg.join(', ') : serverMsg);
+      } else {
+        toast.error('Failed to upload images. Please try again.');
+      }
+    },
   });
 
   const deleteMutation = useMutation({
@@ -85,6 +100,17 @@ export default function ImageUploadManager({ open, onClose, property, inline = f
     const imageFiles = files.filter((f) => f.type.startsWith('image/'));
     if (imageFiles.length === 0) {
       toast.error('Please select image files only.');
+      return;
+    }
+
+    // Client-side size validation — catch oversized files before hitting the network
+    const oversized = imageFiles.filter((f) => f.size > MAX_FILE_SIZE_BYTES);
+    if (oversized.length > 0) {
+      const names = oversized.map((f) => f.name).join(', ');
+      toast.error(
+        `${names} ${oversized.length === 1 ? 'exceeds' : 'exceed'} the ${MAX_FILE_SIZE_MB}MB limit. ` +
+        `Please compress or resize before uploading.`,
+      );
       return;
     }
 
@@ -137,7 +163,7 @@ export default function ImageUploadManager({ open, onClose, property, inline = f
   const slotsRemaining = 4 - images.length;
 
   const content = (
-    <div className={inline ? "space-y-4" : ""}>
+    <div className={inline ? 'space-y-4' : ''}>
       {/* ── Uploaded Images ── */}
       {images.length > 0 ? (
         <div>
@@ -279,7 +305,7 @@ export default function ImageUploadManager({ open, onClose, property, inline = f
                   {isDragOver ? 'Drop images here' : 'Drag & drop images here'}
                 </p>
                 <p className="text-xs mt-0.5 text-gray-400">
-                  or click to browse · {slotsRemaining} slot{slotsRemaining !== 1 ? 's' : ''} remaining
+                  or click to browse · {slotsRemaining} slot{slotsRemaining !== 1 ? 's' : ''} remaining · max {MAX_FILE_SIZE_MB}MB each
                 </p>
               </div>
             </div>
