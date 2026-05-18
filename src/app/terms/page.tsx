@@ -39,8 +39,7 @@ export default function TermsPage() {
 
         <LegalSection title="1. About Rentora Houselink Uganda">
           <p>
-            {COMPANY_NAME} (&quot;Rentora&quot;, &quot;we&quot;, &quot;us&quot;, or &quot;our&quot;)
-            is a digital property listing and rental management platform incorporated in Uganda,
+            {COMPANY_NAME} is a digital property listing and rental management platform incorporated in Uganda,
             with offices at {COMPANY_ADDRESS}. We connect property owners and agents with renters
             looking for residential houses, apartments, hostels, hotels, AirBnBs, office spaces,
             and business spaces across Uganda.

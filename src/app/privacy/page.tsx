@@ -40,8 +40,7 @@ export default function PrivacyPage() {
 
         <LegalSection title="1. Who We Are">
           <p>
-            {COMPANY_NAME} (&quot;Rentora&quot;, &quot;we&quot;, &quot;us&quot;, or &quot;our&quot;)
-            is a digital property listing platform based at {COMPANY_ADDRESS}. We are responsible
+            {COMPANY_NAME} is a digital property listing platform based at {COMPANY_ADDRESS}. We are responsible
             for the personal data you provide when using the Rentora mobile application and any
             associated services.
           </p>
